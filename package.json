@@ -10,7 +10,15 @@
     "prepack": "npm run build",
     "release": "bumpp --commit --no-push && npm publish"
   },
-  "keywords": [],
+  "keywords": [
+    "browser",
+    "extension",
+    "typescript"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./background-forward": "./dist/background-forward.js"
+  },
   "author": "",
   "license": "MIT",
   "dependencies": {
