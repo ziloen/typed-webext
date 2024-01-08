@@ -2,9 +2,12 @@
   "name": "typed-webext",
   "version": "0.1.0",
   "description": "Type safe web extension api (partial)",
-  "main": "./index.js",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "prepack": "npm run build",
     "release": "bumpp --commit --no-push && npm publish"
   },
   "keywords": [],
@@ -15,6 +18,9 @@
     "type-fest": "^4.9.0",
     "webextension-polyfill": ">=0.10.0 <=1.0.0"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/webextension-polyfill": "^0.10.7",
     "bumpp": "^9.2.1",
