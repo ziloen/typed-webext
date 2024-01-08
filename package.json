@@ -1,6 +1,6 @@
 {
   "name": "typed-webext",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Type sage web extension api",
   "main": "./index.js",
   "scripts": {
