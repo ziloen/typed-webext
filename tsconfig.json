@@ -1,0 +1,79 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "ESNext",
+    "target": "ESNext",
+    /**
+     * ===== Type Checking =====
+     */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": false,
+    // "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    // "allowUnusedLabels": true,
+    // "allowUnreachableCode": true,
+    /**
+     * ===== Emit =====
+     */
+    "removeComments": true,
+    "allowJs": false,
+    // "incremental": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "stripInternal": true,
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "downlevelIteration": false,
+    /**
+     * ===== Interop Constraints =====
+     */
+    // "isolatedModules": false,
+    // "verbatimModuleSyntax": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    /**
+     * ===== Output Formatting =====
+     */
+    "preserveWatchOutput": true,
+    "pretty": true,
+    "noErrorTruncation": false,
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    "types": [
+      "ts-lib-enhance"
+    ],
+    "paths": {
+      "~/*": [
+        "src/*"
+      ],
+      "~cwd/*": [
+        "./*"
+      ],
+    },
+    "plugins": []
+  },
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "include": [
+    "src",
+  ]
+}

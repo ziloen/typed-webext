@@ -1,22 +1,29 @@
 {
   "name": "typed-webext",
   "version": "0.1.0",
-  "description": "Type sage web extension api",
+  "description": "Type safe web extension api (partial)",
   "main": "./index.js",
   "scripts": {
+    "build": "tsup",
     "release": "bumpp --commit --no-push && npm publish"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "serialize-error": "<12",
+    "type-fest": "^4.9.0",
     "webextension-polyfill": ">=0.10.0 <=1.0.0"
   },
   "devDependencies": {
     "@types/webextension-polyfill": "^0.10.7",
-    "bumpp": "^9.2.1"
+    "bumpp": "^9.2.1",
+    "ts-lib-enhance": "^1.0.16",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
   },
   "peerDependencies": {
+    "serialize-error": "<12",
     "webextension-polyfill": ">=0.10.0 <=1.0.0"
   }
 }
