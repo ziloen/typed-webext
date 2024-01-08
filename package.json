@@ -1,0 +1,22 @@
+{
+  "name": "typed-webext",
+  "version": "1.0.0",
+  "description": "Type sage web extension api",
+  "main": "./index.js",
+  "scripts": {
+    "release": "bumpp --commit --no-push && npm publish"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "webextension-polyfill": ">=0.10.0 <=1.0.0"
+  },
+  "devDependencies": {
+    "@types/webextension-polyfill": "^0.10.7",
+    "bumpp": "^9.2.1"
+  },
+  "peerDependencies": {
+    "webextension-polyfill": ">=0.10.0 <=1.0.0"
+  }
+}
