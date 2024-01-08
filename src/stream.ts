@@ -13,6 +13,7 @@ type StreamReturn<K extends StreamKey> = StreamProtocol[K][1]
 type Stream<SendData = unknown, MsgData = unknown> = {
   /**
    * signal for aborting the stream
+   * 
    * @example
    * ```ts
    * onOpenStreamChannel('example', stream => {
@@ -48,6 +49,7 @@ type Stream<SendData = unknown, MsgData = unknown> = {
    * async iterator for messages from another end
    *
    * @param [msg] initial message to send
+   * 
    * @example
    * ```ts
    * for await (const msg of stream.iter(data)) {
@@ -95,7 +97,6 @@ function createStream<T = unknown, K = unknown>(
     close: () => connected && port.disconnect(),
     onMessage,
     onClose,
-    // eslint-disable-next-line @typescript-eslint/require-await
     async *iter(...args) {
       let resolve: (value: K) => void
 
@@ -106,7 +107,6 @@ function createStream<T = unknown, K = unknown>(
 
       try {
         while (true) {
-          // eslint-disable-next-line @typescript-eslint/no-loop-func
           yield new Promise<K>(r => (resolve = r))
         }
       } finally {
@@ -139,6 +139,8 @@ export function onOpenStream<T extends StreamKey>(
 }
 
 /**
+ * Open a stream channel for sending and receiving messages
+ * 
  * @example
  * ```ts
  * const stream = openStream('example')

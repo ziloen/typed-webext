@@ -22,7 +22,6 @@ type MsgReturn<K extends MsgKey> = MessageProtocol[K][1]
 
 type MsgCallback<D = MsgData<MsgKey>, R = MsgReturn<MsgKey>> = (
   message: Message<D>
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 ) => IfNever<R, void, Promisable<R>>
 
 type PassiveCallback<D = MsgData<MsgKey>> = (message: Message<D>) => void
