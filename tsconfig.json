@@ -28,7 +28,7 @@
     /**
      * ===== Emit =====
      */
-    "removeComments": true,
+    "removeComments": false,
     "allowJs": false,
     // "incremental": true,
     "skipLibCheck": true,

@@ -6,7 +6,7 @@ export default defineConfig({
     "src/background-forward.ts",
   ],
   outDir: "dist",
-  minify: true,
+  // minify: true,
   dts: true,
   format: ["esm"],
   clean: true,

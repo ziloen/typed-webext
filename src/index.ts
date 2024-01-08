@@ -3,20 +3,29 @@ import { webextHandleMessage } from './message'
 import { webextHandleStream } from './stream'
 
 export { onMessage, sendMessage } from './message'
-export { getStorageLocal, removeStorageLocal, setStorageLocal } from './storage'
+export { getStorageLocal, removeStorageLocal, setStorageLocal, onStorageLocalChanged } from './storage'
 export { onOpenStream, openStream } from './stream'
 
 
+/**
+ * 
+ */
 export interface StreamProtocol {
 
 }
 
 
+/**
+ * 
+ */
 export interface MessageProtocol {
 
 }
 
 
+/**
+ * 
+ */
 export interface StorageLocalProtocol {
 
 }

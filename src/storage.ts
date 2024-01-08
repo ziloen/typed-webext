@@ -95,7 +95,7 @@ type ChangesType = {
     }
   }
 
-export function onStorageLocalChange(callback: (changes: ChangesType) => void) {
+export function onStorageLocalChanged(callback: (changes: ChangesType) => void) {
   browser.storage.local.onChanged.addListener(callback)
 
   return () => browser.storage.local.onChanged.removeListener(callback)
