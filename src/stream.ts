@@ -12,6 +12,10 @@ type StreamReturn<K extends StreamKey> = StreamProtocol[K][1]
  */
 type Stream<SendData = unknown, MsgData = unknown> = {
   /**
+   * The port connecting the two ends of the stream
+   */
+  port: Runtime.Port
+  /**
    * signal for aborting the stream
    * 
    * @example
@@ -91,6 +95,7 @@ function createStream<T = unknown, K = unknown>(
   }
 
   return {
+    port,
     signal: abortController.signal,
     // avoid sending message after disconnect
     send: msg => connected && port.postMessage(msg),

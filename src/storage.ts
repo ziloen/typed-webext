@@ -79,8 +79,38 @@ export async function removeStorageLocal(key: string | string[]) {
   return browser.storage.local.remove(key)
 }
 
-export async function setStorageLocal(items: { [K in Key]?: StorageValue<K> }) {
-  return browser.storage.local.set(items)
+/**
+ * Set one storage.local value
+ * 
+ * @param key storage.local key
+ * @param value value to set
+ * 
+ * @example
+ * ```ts
+ * await setStorageLocal('a', 123)
+ * ```
+ */
+export async function setStorageLocal<K extends Key>(
+  key: K,
+  value: StorageValue<K>
+): Promise<void>
+/**
+ * Set multiple storage.local values
+ * 
+ * @param items storage.local key-value pairs
+ * 
+ * @example
+ * ```ts
+ * await setStorageLocal({ a: 123, b: 'b' })
+ * ```
+ */
+export async function setStorageLocal(items: Partial<StorageLocalProtocol>): Promise<void>
+export async function setStorageLocal(items: string | Record<string, any>, value?: unknown) {
+  if (typeof items === "string") {
+    return browser.storage.local.set({ [items]: value })
+  } else {
+    return browser.storage.local.set(items)
+  }
 }
 
 type ChangesType = {
