@@ -45,20 +45,23 @@ export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
 
   type Res = { data: MsgReturn<K> } | { error: ErrorObject } | null
 
-  const res = (
+  const res = await (
     tabId === undefined
-      ? await browser.runtime.sendMessage({
+      // No tabId, send directly to background
+      ? browser.runtime.sendMessage({
         id,
         data,
         [MessageIdentifierKey]: 1,
       })
       : tabId !== 'sender' && frameId !== 'sender' && isTabsApiAvailable()
-        ? await browser.tabs.sendMessage(
+        // Send to tab and tabs API is available
+        ? browser.tabs.sendMessage(
           tabId,
           { id, data, [MessageIdentifierKey]: 1 },
           frameId === undefined ? undefined : { frameId }
         )
-        : await browser.runtime.sendMessage({
+        // Send to tab and tabs API is not available, forward by background
+        : browser.runtime.sendMessage({
           id: BackgroundForwardMessageId,
           data: {
             tabId,
@@ -148,24 +151,31 @@ export function onMessage<K extends MsgKey>(
  */
 export function webextHandleMessage(
   message:
-    | { id: MsgKey; data: MsgData<MsgKey>;[MessageIdentifierKey]?: 1 }
+    | {
+      id: MsgKey
+      data: MsgData<MsgKey>;
+      [MessageIdentifierKey]?: 1
+    }
     | undefined,
   sender: Runtime.MessageSender
 ) {
   if (message?.[MessageIdentifierKey] !== 1) return
   const id = message.id
 
+  // Run all passive listeners
   const passiveListeners = pasiveListenersMap.get(id)
   if (passiveListeners) {
     for (const cb of passiveListeners) {
       try {
         cb({ sender, data: message.data, id })
       } catch (e) {
+        // catch error to prevent runtime.onMessage from throwing
         console.error(e)
       }
     }
   }
 
+  // Run the listener
   const listener = listenersMap.get(id)
   if (!listener) return
 
@@ -175,44 +185,40 @@ export function webextHandleMessage(
 }
 
 export function backgroundForwardMessage() {
-  browser.runtime.onMessage.addListener(
-    (
-      message:
-        | {
-          id?: string
-          data?: unknown
-          [MessageIdentifierKey]?: 1
-        }
-        | null
-        | undefined,
-      sender
-    ) => {
-      if (
-        message?.[MessageIdentifierKey] === 1 &&
-        message?.id === BackgroundForwardMessageId
-      ) {
-        const { tabId, frameId, id, data } = message.data as {
-          tabId: number | 'sender'
-          frameId: number | undefined | 'sender'
-          id: string
-          data: unknown
-        }
-
-        const targetTabId = tabId === 'sender' ? sender.tab!.id! : tabId
-        const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
-
-        return browser.tabs.sendMessage(
-          targetTabId,
-          {
-            id,
-            data,
-            [MessageIdentifierKey]: 1,
-          },
-          targetFrameId === undefined ? undefined : { frameId: targetFrameId }
-        )
-      }
-
-      return
+  type Msg =
+    | {
+      id?: string
+      data?: unknown
+      [MessageIdentifierKey]?: 1
     }
-  )
+    | null
+    | undefined
+
+  browser.runtime.onMessage.addListener((
+    message: Msg,
+    sender
+  ) => {
+    if (message?.[MessageIdentifierKey] !== 1) return
+    if (message?.id !== BackgroundForwardMessageId) return
+
+    const { tabId, frameId, id, data } = message.data as {
+      tabId: number | 'sender'
+      frameId: number | undefined | 'sender'
+      id: string
+      data: unknown
+    }
+
+    const targetTabId = tabId === 'sender' ? sender.tab!.id! : tabId
+    const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
+
+    return browser.tabs.sendMessage(
+      targetTabId,
+      {
+        id,
+        data,
+        [MessageIdentifierKey]: 1,
+      },
+      targetFrameId === undefined ? undefined : { frameId: targetFrameId }
+    )
+  })
 }

@@ -8,7 +8,7 @@ export { onOpenStream, openStream } from './stream'
 
 
 /**
- * 
+ * Used by `onOpenStream` and `openStream`
  */
 export interface StreamProtocol {
 
@@ -16,7 +16,7 @@ export interface StreamProtocol {
 
 
 /**
- * 
+ * Used by `onMessage` and `sendMessage`
  */
 export interface MessageProtocol {
 
@@ -24,7 +24,7 @@ export interface MessageProtocol {
 
 
 /**
- * 
+ * Used by `getStorageLocal`, `removeStorageLocal`, `setStorageLocal` and `onStorageLocalChanged`
  */
 export interface StorageLocalProtocol {
 
