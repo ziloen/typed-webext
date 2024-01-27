@@ -18,7 +18,10 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./background-forward": "./dist/background-forward.js"
+    "./background": "./dist/background.js",
+    "./storage": "./dist/storage.js",
+    "./message": "./dist/message.js",
+    "./stream": "./dist/stream.js"
   },
   "author": "",
   "license": "MIT",

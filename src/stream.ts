@@ -175,9 +175,19 @@ export function webextHandleStream(port: Runtime.Port) {
   const listener = listeners.get(channel)
 
   if (!listener) {
-    console.error('Connect without listener')
+    console.error(`Channel "${channel}" has no listener.`)
     return
   }
 
   listener(createStream(port))
 }
+
+// side effects
+if (
+  browser.runtime.onConnect.hasListeners()
+) {
+  console.error(`runtime.onConnect has listeners, typed-webext/stream can't handle stream.`)
+} else {
+  browser.runtime.onConnect.addListener(webextHandleStream)
+}
+

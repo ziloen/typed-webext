@@ -244,3 +244,7 @@ export function backgroundForwardMessage() {
     )
   })
 }
+
+
+// side effects
+browser.runtime.onMessage.addListener(webextHandleMessage)
