@@ -154,6 +154,11 @@ export function onMessage<K extends MsgKey>(
 }
 
 /**
+ * 
+ */
+let isBackground = false
+
+/**
  * Handle message from runtime.onMessage
  */
 export function webextHandleMessage(
@@ -171,6 +176,12 @@ export function webextHandleMessage(
   sender: Runtime.MessageSender
 ) {
   if (message?.[MessageIdentifierKey] !== 1) return
+
+  if (isBackground) {
+    const res = handleForwardMessage(message, sender)
+    if (res) return res
+  }
+
   const id = message.id
 
   // Run all passive listeners
@@ -205,46 +216,41 @@ export function webextHandleMessage(
     .catch((error: Error) => ({ error: serializeError(error) }))
 }
 
-export function backgroundForwardMessage() {
-  type Msg =
-    | {
-      id?: string
-      data?: unknown
-      [MessageIdentifierKey]?: 1
-    }
-    | null
-    | undefined
+function handleForwardMessage(message:
+  {
+    id?: string
+    data?: unknown
+    [MessageIdentifierKey]?: 1
+  },
+  sender: Runtime.MessageSender
+) {
+  if (message.id !== BackgroundForwardMessageId) return
 
-  browser.runtime.onMessage.addListener((
-    message: Msg,
-    sender
-  ) => {
-    if (message?.[MessageIdentifierKey] !== 1) return
-    if (message?.id !== BackgroundForwardMessageId) return
+  const { tabId, frameId, id, data } = message.data as {
+    tabId: number | 'sender'
+    frameId: number | undefined | 'sender'
+    id: string
+    data: unknown
+  }
 
-    const { tabId, frameId, id, data } = message.data as {
-      tabId: number | 'sender'
-      frameId: number | undefined | 'sender'
-      id: string
-      data: unknown
-    }
+  const targetTabId = tabId === 'sender' ? sender.tab!.id! : tabId
+  const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
 
-    const targetTabId = tabId === 'sender' ? sender.tab!.id! : tabId
-    const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
-
-    return browser.tabs.sendMessage(
-      targetTabId,
-      {
-        id,
-        data,
-        sender,
-        [MessageIdentifierKey]: 1,
-      },
-      targetFrameId === undefined ? undefined : { frameId: targetFrameId }
-    )
-  })
+  return browser.tabs.sendMessage(
+    targetTabId,
+    {
+      id,
+      data,
+      sender,
+      [MessageIdentifierKey]: 1,
+    },
+    targetFrameId === undefined ? undefined : { frameId: targetFrameId }
+  )
 }
 
+export function backgroundForwardMessage() {
+  isBackground = true
+}
 
 // side effects
 browser.runtime.onMessage.addListener(webextHandleMessage)
