@@ -12,8 +12,15 @@ const MessageIdentifierKey = '__webext_message_identifier__'
 
 type Message<T> = {
   id: string
+  /**
+   * The sender of the message
+   */
   sender: Runtime.MessageSender
   data: T
+  /**
+   * The original sender of the message if it is forwarded by background
+   */
+  originalSender?: Runtime.MessageSender | undefined
 }
 
 type MsgKey = keyof MessageProtocol
@@ -153,7 +160,11 @@ export function webextHandleMessage(
   message:
     | {
       id: MsgKey
-      data: MsgData<MsgKey>;
+      data: MsgData<MsgKey>
+      /** 
+       * Forwarded message sender
+       */
+      sender?: Runtime.MessageSender
       [MessageIdentifierKey]?: 1
     }
     | undefined,
@@ -167,7 +178,12 @@ export function webextHandleMessage(
   if (passiveListeners) {
     for (const cb of passiveListeners) {
       try {
-        cb({ sender, data: message.data, id })
+        cb({
+          id,
+          data: message.data,
+          sender,
+          originalSender: message.sender,
+        })
       } catch (e) {
         // catch error to prevent runtime.onMessage from throwing
         console.error(e)
@@ -179,7 +195,12 @@ export function webextHandleMessage(
   const listener = listenersMap.get(id)
   if (!listener) return
 
-  return Promise.resolve(listener({ sender, data: message.data, id }))
+  return Promise.resolve(listener({
+    id,
+    data: message.data,
+    sender,
+    originalSender: message.sender,
+  }))
     .then(data => ({ data }))
     .catch((error: Error) => ({ error: serializeError(error) }))
 }
@@ -216,6 +237,7 @@ export function backgroundForwardMessage() {
       {
         id,
         data,
+        sender,
         [MessageIdentifierKey]: 1,
       },
       targetFrameId === undefined ? undefined : { frameId: targetFrameId }
