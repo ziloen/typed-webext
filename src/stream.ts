@@ -176,7 +176,7 @@ export function webextHandleStream(port: Runtime.Port) {
 
   if (!listener) {
     console.error('Connect without listener')
-    return port.disconnect()
+    return
   }
 
   listener(createStream(port))
