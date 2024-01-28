@@ -10,7 +10,9 @@ export default defineConfig({
   ],
   outDir: "dist",
   // minify: true,
-  dts: true,
+  // dts: true,
+  experimentalDts: true,
   format: ["esm"],
+  treeshake: true,
   clean: true,
 })
