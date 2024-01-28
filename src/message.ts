@@ -4,7 +4,6 @@ import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from "webextension-polyfill"
 import type { MessageProtocol } from './index'
-import { isTabsApiAvailable } from './utils'
 
 const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
 
@@ -254,3 +253,7 @@ export function backgroundForwardMessage() {
 
 // side effects
 browser.runtime.onMessage.addListener(webextHandleMessage)
+
+function isTabsApiAvailable() {
+  return browser.tabs && typeof browser.tabs.sendMessage === 'function'
+}

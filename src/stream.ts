@@ -1,7 +1,8 @@
-import { noop } from './utils'
 import type { Runtime } from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
 import * as browser from "webextension-polyfill"
+
+const noop = (() => { }) as (...args: any[]) => void
 
 type StreamKey = keyof StreamProtocol
 type StreamData<K extends StreamKey> = StreamProtocol[K][0]
@@ -190,4 +191,5 @@ if (
 } else {
   browser.runtime.onConnect.addListener(webextHandleStream)
 }
+
 
