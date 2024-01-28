@@ -79,7 +79,7 @@ export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
         })
   ) as Res
 
-  if (res === null) {
+  if (res === null || res === undefined) {
     throw new Error(
       'null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners.'
     )

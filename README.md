@@ -1,6 +1,10 @@
 # typed-webext
  Type safe web extension api (partial)
 
+
+> [!WARNING]
+> Still working in progress, do not use in production
+
 ## Message 
 
 Based on `browser.runtime.sendMessage`

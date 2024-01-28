@@ -1,8 +1,3 @@
-// export { onMessage, sendMessage } from './message'
-// export { getStorageLocal, onStorageLocalChanged, removeStorageLocal, setStorageLocal } from './storage'
-// export { onOpenStream, openStream } from './stream'
-
-
 /**
  * Used by `onOpenStream` and `openStream`
  */
