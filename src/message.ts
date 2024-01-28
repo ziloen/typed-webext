@@ -79,7 +79,7 @@ export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
         })
   ) as Res
 
-  if (!res) {
+  if (res === null) {
     throw new Error(
       'null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners.'
     )
@@ -252,7 +252,13 @@ export function backgroundForwardMessage() {
 }
 
 // side effects
-browser.runtime.onMessage.addListener(webextHandleMessage)
+if (browser.runtime.onMessage.hasListeners()) {
+  throw new Error(
+    `runtime.onMessage already has listeners, typed-webext/message can't handle message.`
+  )
+} {
+  browser.runtime.onMessage.addListener(webextHandleMessage)
+}
 
 function isTabsApiAvailable() {
   return browser.tabs && typeof browser.tabs.sendMessage === 'function'
