@@ -39,7 +39,15 @@ type Params<K extends MsgKey, D = MsgData<K>> = IfNever<
 >
 
 type SendOptions = {
-  tabId?: number | undefined | 'sender'
+  /**
+   * The ID of the tab which the message will be sent to.
+   * 
+   * - `undefined`: The message will be sent to all.
+   * - `'sender'`: The message will be sent to the sender of the message.
+   * - `'active'`: The message will be sent to the active tab.
+   * - `number`: The ID of the tab which the message will be sent to.
+   */
+  tabId?: number | undefined | 'sender' | "active"
   frameId?: number | undefined | 'sender'
 }
 
@@ -51,33 +59,41 @@ export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
 
   type Res = { data: MsgReturn<K> } | { error: ErrorObject } | null
 
-  const res = await (
-    tabId === undefined
-      // No tabId, send directly to background
-      ? browser.runtime.sendMessage({
+  let res: Res
+
+  // No tabId, send directly to background
+  if (tabId === undefined) {
+    res = await browser.runtime.sendMessage({
+      id,
+      data,
+      [MessageIdentifierKey]: 1,
+    })
+  }
+  // Send to tab and tabs API is available
+  else if (
+    tabId !== 'sender' &&
+    frameId !== 'sender' &&
+    isTabsApiAvailable()
+  ) {
+    res = await browser.tabs.sendMessage(
+      tabId === 'active' ? await getActiveTabId() : tabId,
+      { id, data, [MessageIdentifierKey]: 1 },
+      frameId === undefined ? undefined : { frameId }
+    )
+  }
+  // Send to tab and tabs API is not available, forward by background
+  else {
+    res = await browser.runtime.sendMessage({
+      id: BackgroundForwardMessageId,
+      data: {
+        tabId,
+        frameId,
         id,
         data,
-        [MessageIdentifierKey]: 1,
-      })
-      : tabId !== 'sender' && frameId !== 'sender' && isTabsApiAvailable()
-        // Send to tab and tabs API is available
-        ? browser.tabs.sendMessage(
-          tabId,
-          { id, data, [MessageIdentifierKey]: 1 },
-          frameId === undefined ? undefined : { frameId }
-        )
-        // Send to tab and tabs API is not available, forward by background
-        : browser.runtime.sendMessage({
-          id: BackgroundForwardMessageId,
-          data: {
-            tabId,
-            frameId,
-            id,
-            data,
-          },
-          [MessageIdentifierKey]: 1,
-        })
-  ) as Res
+      },
+      [MessageIdentifierKey]: 1,
+    })
+  }
 
   if (res === null || res === undefined) {
     throw new Error(
@@ -225,26 +241,39 @@ function handleForwardMessage(message:
 ) {
   if (message.id !== BackgroundForwardMessageId) return
 
-  const { tabId, frameId, id, data } = message.data as {
-    tabId: number | 'sender'
-    frameId: number | undefined | 'sender'
-    id: string
-    data: unknown
-  }
+  return new Promise(async (resolve, reject) => {
+    const { tabId, frameId, id, data } = message.data as {
+      tabId: number | 'sender' | "active"
+      frameId: number | undefined | 'sender'
+      id: string
+      data: unknown
+    }
 
-  const targetTabId = tabId === 'sender' ? sender.tab!.id! : tabId
-  const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
+    let targetTabId: number
+    try {
+      targetTabId = tabId === 'sender'
+        ? sender.tab!.id!
+        : tabId === "active"
+          ? await getActiveTabId()
+          : tabId
+    } catch (error) {
+      return reject(error)
+    }
 
-  return browser.tabs.sendMessage(
-    targetTabId,
-    {
-      id,
-      data,
-      sender,
-      [MessageIdentifierKey]: 1,
-    },
-    targetFrameId === undefined ? undefined : { frameId: targetFrameId }
-  )
+    const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
+
+    resolve(browser.tabs.sendMessage(
+      targetTabId,
+      {
+        id,
+        data,
+        sender,
+        [MessageIdentifierKey]: 1,
+      },
+      targetFrameId === undefined ? undefined : { frameId: targetFrameId }
+    ))
+  })
+
 }
 
 export function backgroundForwardMessage() {
@@ -262,4 +291,17 @@ if (browser.runtime.onMessage.hasListeners()) {
 
 function isTabsApiAvailable() {
   return browser.tabs && typeof browser.tabs.sendMessage === 'function'
+}
+
+async function getActiveTabId() {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
+
+  if (!tab) throw new Error('No active tab')
+  const id = tab.id
+  if (id === undefined) throw new Error('No active tab id')
+  return id
+}
+
+function isAsyncFn(fn: (...args: any) => any) {
+  return fn.constructor.name === 'AsyncFunction'
 }
