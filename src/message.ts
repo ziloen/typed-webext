@@ -285,7 +285,7 @@ if (browser.runtime.onMessage.hasListeners()) {
   throw new Error(
     `runtime.onMessage already has listeners, typed-webext/message can't handle message.`
   )
-} {
+} else {
   browser.runtime.onMessage.addListener(webextHandleMessage)
 }
 

@@ -8,7 +8,11 @@ type StorageValue<K extends Key> = StorageLocalProtocol[K]
  * Get storage.local value
  * @example
  * ```ts
- * const data = await getStorageLocal<number[]>('a')
+ * interface StorageLocalProtocol {
+ *   a: number[]
+ * }
+ * 
+ * const data = await getStorageLocal('a')
  * //    ^ number[] | undefined
  * ```
  */
@@ -19,7 +23,11 @@ export async function getStorageLocal<K extends Key>(
  * Get storage.local value with default value
  * @example
  * ```ts
- * const a = await getStorageLocal<number[]>('a', [])
+ * interface StorageLocalProtocol {
+ *   a: number[]
+ * }
+ * 
+ * const a = await getStorageLocal('a', [])
  * //    ^ number[]
  * ```
  */
@@ -31,8 +39,13 @@ export async function getStorageLocal<K extends Key, D, V = StorageValue<K>>(
  * Get multiple storage.local values
  * @example
  * ```ts
- * const { a, b } = await getStorageLocal<{ a: string, b: number }>(['a', 'b'])
- * //      ^ { a?: string, b?: number }
+ * interface StorageLocalProtocol {
+ *   a: string
+ *   b: number
+ * }
+ * 
+ * const { a, b } = await getStorageLocal(['a', 'b'])
+ * //    ^ { a?: string, b?: number }
  * ```
  */
 export async function getStorageLocal<K extends Key>(key: K[]): Promise<{
@@ -42,8 +55,13 @@ export async function getStorageLocal<K extends Key>(key: K[]): Promise<{
  * Get multiple storage.local values with default values
  * @example
  * ```ts
+ * interface StorageLocalProtocol {
+ *   a: string
+ *   b: number
+ * }
+ * 
  * const { a, b } = await getStorageLocal({ a: 123, b: 'b' })
- * //      ^ { a: number, b: string }
+ * //    ^ { a: number, b: string }
  * ```
  */
 export async function getStorageLocal<O extends { [K in Key]?: unknown }>(
@@ -114,12 +132,12 @@ export async function setStorageLocal(items: string | Record<string, any>, value
 }
 
 type ChangesType = {
-  [K in keyof StorageLocalProtocol]?: {
-    oldValue?: StorageLocalProtocol[K]
-    newValue?: StorageLocalProtocol[K]
+  [K in Key]?: {
+    oldValue?: StorageValue<K>
+    newValue?: StorageValue<K>
   }
 } & {
-    [K in string & Record<never, never>]?: {
+    [K in (string & Record<never, never>)]?: {
       oldValue?: unknown
       newValue?: unknown
     }
