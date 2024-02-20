@@ -49,7 +49,7 @@ export async function getStorageLocal<K extends Key, D, V = StorageValue<K>>(
  * ```
  */
 export async function getStorageLocal<K extends Key>(key: K[]): Promise<{
-  [key in K]?: StorageValue<K>
+  [P in K]?: StorageValue<P>
 }>
 /**
  * Get multiple storage.local values with default values
@@ -98,6 +98,18 @@ export async function removeStorageLocal(key: string | string[]) {
 }
 
 /**
+ * Set multiple storage.local values
+ * 
+ * @param items storage.local key-value pairs
+ * 
+ * @example
+ * ```ts
+ * await setStorageLocal({ a: 123, b: 'b' })
+ * ```
+ * Known issue: Computed property might not happy with TypeScript
+ */
+export async function setStorageLocal(items: Partial<StorageLocalProtocol>): Promise<void>
+/**
  * Set one storage.local value
  * 
  * @param key storage.local key
@@ -112,17 +124,6 @@ export async function setStorageLocal<K extends Key>(
   key: K,
   value: StorageValue<K>
 ): Promise<void>
-/**
- * Set multiple storage.local values
- * 
- * @param items storage.local key-value pairs
- * 
- * @example
- * ```ts
- * await setStorageLocal({ a: 123, b: 'b' })
- * ```
- */
-export async function setStorageLocal(items: Partial<StorageLocalProtocol>): Promise<void>
 export async function setStorageLocal(items: string | Record<string, any>, value?: unknown) {
   if (typeof items === "string") {
     return browser.storage.local.set({ [items]: value })
