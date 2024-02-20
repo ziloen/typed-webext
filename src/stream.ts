@@ -63,6 +63,9 @@ type Stream<SendData = unknown, MsgData = unknown> = {
    * ```
    */
   iter(msg?: SendData): AsyncIterable<MsgData>
+
+  // [Symbol.dispose]
+  // [Symbol.observable]
 }
 
 type StreamCallback<SendData, MsgData> = (
@@ -100,7 +103,11 @@ function createStream<T = unknown, K = unknown>(
     signal: abortController.signal,
     // avoid sending message after disconnect
     send: msg => connected && port.postMessage(msg),
-    close: () => connected && port.disconnect(),
+    close: () => {
+      if (!connected) return
+      connected = false
+      port.disconnect()
+    },
     onMessage,
     onClose,
     async *iter(...args) {
@@ -120,6 +127,8 @@ function createStream<T = unknown, K = unknown>(
         cleanupOnDisconnect()
       }
     },
+    // [Symbol.dispose]
+    // [Symbol.observable]
   }
 }
 

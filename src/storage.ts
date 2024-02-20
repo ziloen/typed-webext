@@ -131,15 +131,19 @@ export async function setStorageLocal(items: string | Record<string, any>, value
   }
 }
 
-type ChangesType = {
-  [K in Key]?: {
-    oldValue?: StorageValue<K>
-    newValue?: StorageValue<K>
+type ChangesType =
+  // StorageLocalProtocol keys
+  & {
+    [K in Key]?: {
+      readonly oldValue?: StorageValue<K>
+      readonly newValue?: StorageValue<K>
+    }
   }
-} & {
+  // Unknown keys
+  & {
     [K in (string & Record<never, never>)]?: {
-      oldValue?: unknown
-      newValue?: unknown
+      readonly oldValue?: unknown
+      readonly newValue?: unknown
     }
   }
 
