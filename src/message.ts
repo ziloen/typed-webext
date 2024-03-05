@@ -52,6 +52,10 @@ type SendOptions = {
 }
 
 export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
+  if (!browser.runtime.id) {
+    throw new Error('Extension context is not available.')
+  }
+
   const [id, data, options = {}] = args
 
   const tabId = options.tabId

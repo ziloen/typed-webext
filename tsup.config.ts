@@ -12,5 +12,6 @@ export default defineConfig({
   dts: true,
   format: ["esm"],
   treeshake: true,
+  sourcemap: true,
   clean: true,
 })
