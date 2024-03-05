@@ -90,12 +90,12 @@ function createStream<T = unknown, K = unknown>(
 
   function onClose(callback: () => void) {
     port.onDisconnect.addListener(callback)
-    return () => port.onDisconnect.removeListener(callback)
+    return () => browser.runtime.id && port.onDisconnect.removeListener(callback)
   }
 
   function onMessage(callback: (msg: K) => void) {
     port.onMessage.addListener(callback)
-    return () => port.onMessage.removeListener(callback)
+    return () => browser.runtime.id && port.onMessage.removeListener(callback)
   }
 
   return {
