@@ -9,7 +9,7 @@ export interface StreamProtocol {
 /**
  * Used by `onMessage` and `sendMessage`
  */
-export interface MessageProtocol {
+export interface MessageProtocol<T = unknown> {
 
 }
 

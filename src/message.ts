@@ -9,13 +9,13 @@ const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
 
 const MessageIdentifierKey = '__webext_message_identifier__'
 
-type Message<T> = {
+type Message<Data> = {
   id: string
   /**
    * The sender of the message
    */
   sender: Runtime.MessageSender
-  data: T
+  data: Data
   /**
    * The original sender of the message if it is forwarded by background
    */
@@ -23,16 +23,16 @@ type Message<T> = {
 }
 
 type MsgKey = keyof MessageProtocol
-type MsgData<K extends MsgKey> = MessageProtocol[K][0]
-type MsgReturn<K extends MsgKey> = MessageProtocol[K][1]
+type MsgData<Key extends MsgKey> = MessageProtocol[Key][0]
+type MsgReturn<Key extends MsgKey, Data = unknown> = MessageProtocol<Data>[Key][1]
 
-type MsgCallback<D = MsgData<MsgKey>, R = MsgReturn<MsgKey>> = (
-  message: Message<D>
-) => IfNever<R, void, Promisable<R>>
+type MsgCallback<Data = MsgData<MsgKey>, Return = MsgReturn<MsgKey>> = (
+  message: Message<Data>
+) => IfNever<Return, void, Promisable<Return>>
 
-type PassiveCallback<D = MsgData<MsgKey>> = (message: Message<D>) => void
+type PassiveCallback<Data = MsgData<MsgKey>> = (message: Message<Data>) => void
 
-type Params<K extends MsgKey, D = MsgData<K>> = IfNever<
+type SendParams<K extends MsgKey, D> = IfNever<
   D,
   [id: K, data?: undefined | null, options?: SendOptions],
   [id: K, data: D, options?: SendOptions]
@@ -51,7 +51,7 @@ type SendOptions = {
   frameId?: number | undefined | 'sender'
 }
 
-export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
+export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>(...args: SendParams<Key, Data>) {
   if (!browser.runtime.id) {
     throw new Error('Extension context is not available.')
   }
@@ -61,7 +61,7 @@ export async function sendMessage<K extends MsgKey>(...args: Params<K>) {
   const tabId = options.tabId
   const frameId = options.frameId
 
-  type Res = { data: MsgReturn<K> } | { error: ErrorObject } | null
+  type Res = { data: MsgReturn<Key, Data> } | { error: ErrorObject } | null
 
   let res: Res
 

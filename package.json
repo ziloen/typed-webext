@@ -27,17 +27,17 @@
   "dependencies": {
     "@types/webextension-polyfill": "^0.10.7",
     "serialize-error": "<12",
-    "type-fest": "^4.10.2",
+    "type-fest": "^4.12.0",
     "webextension-polyfill": ">=0.10.0 <=1.0.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "bumpp": "^9.3.0",
-    "ts-lib-enhance": "^1.0.16",
+    "bumpp": "^9.4.0",
+    "ts-lib-enhance": "^1.0.17",
     "tsup": "^8.0.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "peerDependencies": {
     "serialize-error": "<12",

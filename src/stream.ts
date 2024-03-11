@@ -5,8 +5,8 @@ import * as browser from "webextension-polyfill"
 const noop = (() => { }) as (...args: any[]) => void
 
 type StreamKey = keyof StreamProtocol
-type StreamData<K extends StreamKey> = StreamProtocol[K][0]
-type StreamReturn<K extends StreamKey> = StreamProtocol[K][1]
+type StreamData<Key extends StreamKey> = StreamProtocol[Key][0]
+type StreamReturn<Key extends StreamKey> = StreamProtocol[Key][1]
 
 /**
  * Stream interface for sending and receiving messages
