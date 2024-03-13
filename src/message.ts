@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
 import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
@@ -167,6 +168,7 @@ export function onMessage<K extends MsgKey>(
   }
 
   const listener = listenersMap.get(id)
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   if (listener) throw new Error(`Message ID "${id}" already has a listener.`)
   listenersMap.set(id, callback)
   return () => listenersMap.delete(id)
@@ -261,6 +263,7 @@ function handleForwardMessage(message:
           ? await getActiveTabId()
           : tabId
     } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
       return reject(error)
     }
 
@@ -306,6 +309,6 @@ async function getActiveTabId() {
   return id
 }
 
-function isAsyncFn(fn: (...args: any) => any) {
+function isAsyncFn(fn: (...args: any[]) => any): fn is (...args: any[]) => Promise<any> {
   return fn.constructor.name === 'AsyncFunction'
 }

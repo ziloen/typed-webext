@@ -34,7 +34,9 @@
     "dist"
   ],
   "devDependencies": {
+    "@ziloen/eslint-config": "^0.1.21",
     "bumpp": "^9.4.0",
+    "eslint": "^8.57.0",
     "ts-lib-enhance": "^1.0.17",
     "tsup": "^8.0.2",
     "typescript": "^5.4.2"

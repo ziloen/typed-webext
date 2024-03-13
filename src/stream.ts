@@ -120,6 +120,7 @@ function createStream<T = unknown, K = unknown>(
 
       try {
         while (true) {
+          // eslint-disable-next-line @typescript-eslint/no-loop-func
           yield new Promise<K>(r => (resolve = r))
         }
       } finally {
@@ -148,6 +149,7 @@ export function onOpenStream<T extends StreamKey>(
   callback: StreamCallback<StreamReturn<T>, StreamData<T>>
 ) {
   const listener = listeners.get(channel)
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   if (listener) throw new Error(`Channel "${channel}" already has a listener.`)
   listeners.set(channel, callback)
   return () => listeners.delete(channel)
