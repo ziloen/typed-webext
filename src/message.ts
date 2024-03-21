@@ -35,11 +35,11 @@ type PassiveCallback<Data = MsgData<MsgKey>> = (message: Message<Data>) => void
 
 type SendParams<K extends MsgKey, D> = IfNever<
   D,
-  [id: K, data?: undefined | null, options?: SendOptions],
-  [id: K, data: D, options?: SendOptions]
+  [id: K, data?: undefined | null, options?: SendMessageOptions],
+  [id: K, data: D, options?: SendMessageOptions]
 >
 
-type SendOptions = {
+type SendMessageOptions = {
   /**
    * The ID of the tab which the message will be sent to.
    * 
@@ -116,6 +116,31 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
 const listenersMap = new Map<string, MsgCallback>()
 const pasiveListenersMap = new Map<string, Set<PassiveCallback>>()
 
+type OnMessageOptions<P extends boolean> = {
+  passive?: P
+}
+
+/**
+ * Add a passive listener to the message channel.
+ *
+ * Passive listeners return value is ignored.
+ *
+ * You can add multiple passive listeners to the same channel.
+ *
+ * @example
+ * ```ts
+ * const dispose = onMessage(
+ *   "log length to console",
+ *   ({ data }) => { console.log(data.length) },
+ *   { passive: true }
+ * )
+ * ```
+ */
+export function onMessage<K extends MsgKey>(
+  id: K,
+  callback: PassiveCallback<ReadonlyDeep<MsgData<K>>>,
+  options: OnMessageOptions<true>
+): () => void
 /**
  * Add a listener to the message channel.
  *
@@ -132,34 +157,15 @@ const pasiveListenersMap = new Map<string, Set<PassiveCallback>>()
 export function onMessage<K extends MsgKey>(
   id: K,
   callback: MsgCallback<MsgData<K>, MsgReturn<K>>,
-  passive?: false | undefined
-): () => void
-/**
- * Add a passive listener to the message channel.
- *
- * Passive listeners return value is ignored.
- *
- * You can add multiple passive listeners to the same channel.
- *
- * @example
- * ```ts
- * const dispose = onMessage(
- *   "log length to console",
- *   ({ data }) => { console.log(data.length) },
- *   true
- * )
- * ```
- */
-export function onMessage<K extends MsgKey>(
-  id: K,
-  callback: PassiveCallback<ReadonlyDeep<MsgData<K>>>,
-  passive: true
+  options?: OnMessageOptions<boolean>,
 ): () => void
 export function onMessage<K extends MsgKey>(
   id: K,
   callback: MsgCallback<MsgData<K>, MsgReturn<K>>,
-  passive = false
+  options?: OnMessageOptions<boolean>,
 ) {
+  const passive = options?.passive ?? false
+
   if (passive) {
     const listeners = pasiveListenersMap.get(id) ?? new Set()
     listeners.add(callback)
@@ -287,7 +293,7 @@ export function backgroundForwardMessage() {
   isBackground = true
 }
 
-// side effects
+// FIXME: side effects
 if (browser.runtime.onMessage.hasListeners()) {
   throw new Error(
     `runtime.onMessage already has listeners, typed-webext/message can't handle message.`

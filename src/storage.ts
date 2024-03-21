@@ -136,7 +136,7 @@ export async function setStorageLocal(items: string | Record<string, any>, value
   }
 }
 
-type ChangesType =
+type StorageLocalChange =
   // StorageLocalProtocol keys
   & {
     [K in Key]?: {
@@ -152,7 +152,7 @@ type ChangesType =
     }
   }
 
-export function onStorageLocalChanged(callback: (changes: ChangesType) => void) {
+export function onStorageLocalChanged(callback: (changes: StorageLocalChange) => void) {
   browser.storage.local.onChanged.addListener(callback)
 
   return () => browser.storage.local.onChanged.removeListener(callback)
