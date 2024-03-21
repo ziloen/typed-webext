@@ -10,7 +10,7 @@ export interface StreamProtocol {
  * Used by `onMessage` and `sendMessage`
  */
 export interface MessageProtocol<T = unknown> {
-  a: [string, number]
+
 }
 
 

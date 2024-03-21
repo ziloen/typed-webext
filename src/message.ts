@@ -120,6 +120,7 @@ type OnMessageOptions<P extends boolean> = {
   passive?: P
 }
 
+// TODO: Allow add multiple listeners in one onMessage call
 /**
  * Add a passive listener to the message channel.
  *
