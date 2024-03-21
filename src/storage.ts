@@ -31,7 +31,11 @@ export async function getStorageLocal<K extends Key>(
  * //    ^ number[]
  * ```
  */
-export async function getStorageLocal<K extends Key, D, V = StorageValue<K>>(
+export async function getStorageLocal<
+  K extends Key,
+  V = StorageValue<K>,
+  const D = V
+>(
   key: K,
   defaultValue: D
 ): Promise<D extends V ? V : V | D>
@@ -48,7 +52,7 @@ export async function getStorageLocal<K extends Key, D, V = StorageValue<K>>(
  * //    ^ { a?: string, b?: number }
  * ```
  */
-export async function getStorageLocal<K extends Key>(key: K[]): Promise<{
+export async function getStorageLocal<const K extends Key>(key: K[]): Promise<{
   [P in K]?: StorageValue<P>
 }>
 /**
