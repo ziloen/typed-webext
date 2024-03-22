@@ -102,7 +102,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
 
   if (res === null || res === undefined) {
     throw new Error(
-      'null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners.'
+      'null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners or no listener.'
     )
   }
 
@@ -253,6 +253,7 @@ function handleForwardMessage(message:
   },
   sender: Runtime.MessageSender
 ) {
+  if (message[MessageIdentifierKey] !== 1) return
   if (message.id !== BackgroundForwardMessageId) return
 
   return new Promise(async (resolve, reject) => {
@@ -289,6 +290,17 @@ function handleForwardMessage(message:
     ))
   })
 
+}
+
+/**
+ * TODO: Check if the message is from side panel
+ */
+function isSidePanel(sender: Runtime.MessageSender) {
+  if (sender.tab) return false
+}
+
+function isPopup() {
+  
 }
 
 export function backgroundForwardMessage() {

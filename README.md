@@ -12,8 +12,10 @@ Based on `browser.runtime.sendMessage`
 To Start using this, you need to extend the `MessageProtocol` interface
 
 ```ts
+import { MessageProtocol } from 'typed-webext'
+
 declare module "typed-webext" {
-  interface MessageProtocol {
+  interface MessageProtocol<T = unknown> {
     "get-time": [never, number]
   }
 }
@@ -52,6 +54,8 @@ onMessage("get-time", () => {
 Based on `browser.runtime.connect`
 
 ```ts
+import { StreamProtocol } from 'typed-webext'
+
 declare module "typed-webext" {
   interface StreamProtocol {
     chat: [
@@ -124,6 +128,8 @@ onOpenStream("chat", (stream) => {
 Based on `browser.storage.local`
 
 ```ts
+import { StorageLocalProtocol } from 'typed-webext'
+
 declare module "typed-webext" {
   interface StorageLocalProtocol {
     theme: "light" | "dark" | "high-contrast" | "auto"
