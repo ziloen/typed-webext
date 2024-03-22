@@ -11,6 +11,8 @@ export default defineConfig({
   // minify: true,
   dts: true,
   format: ["esm"],
+  platform: "node",
+  bundle: false,
   treeshake: true,
   sourcemap: true,
   clean: true,
