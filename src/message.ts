@@ -224,6 +224,7 @@ export function webextHandleMessage(
           originalSender: message.sender,
         })
       } catch (e) {
+        // ignore passive listener error
         // catch error to prevent runtime.onMessage from throwing
         console.error(e)
       }
