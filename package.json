@@ -1,6 +1,6 @@
 {
   "name": "typed-webext",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "Type safe web extension api (partial)",
   "main": "dist/index.js",
   "type": "module",
