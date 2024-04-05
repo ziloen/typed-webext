@@ -1,3 +1,7 @@
+export { onMessage, sendMessage, webextHandleMessage } from "./message"
+export { getStorageLocal, onStorageLocalChanged, removeStorageLocal, setStorageLocal } from "./storage"
+export { onOpenStream, openStream, webextHandleStream } from "./stream"
+
 /**
  * Used by `onOpenStream` and `openStream`
  */

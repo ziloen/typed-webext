@@ -27,19 +27,19 @@
   "dependencies": {
     "@types/webextension-polyfill": "^0.10.7",
     "serialize-error": "<12",
-    "type-fest": "^4.12.0",
+    "type-fest": "^4.15.0",
     "webextension-polyfill": ">=0.10.0 <=1.0.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@ziloen/eslint-config": "^0.1.21",
+    "@ziloen/eslint-config": "^0.1.22",
     "bumpp": "^9.4.0",
     "eslint": "^8.57.0",
     "ts-lib-enhance": "^1.0.17",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.4"
   },
   "peerDependencies": {
     "serialize-error": "<12",

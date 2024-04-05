@@ -5,6 +5,8 @@ import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from "webextension-polyfill"
 import type { MessageProtocol } from './index'
+import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId } from './util'
+
 
 const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
 
@@ -50,6 +52,13 @@ type SendMessageOptions = {
    */
   tabId?: number | undefined | 'sender' | "active"
   frameId?: number | undefined | 'sender'
+  /**
+   * The view type of the message.
+   * 
+   * - `'sidebar'`: The message will be sent to the sidebar / side panel.
+   * - `'popup'`: The message will be sent to the popup.
+   */
+  view?: /* "tab" | "popup" | */ "sidebar"
 }
 
 export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>(...args: SendParams<Key, Data>) {
@@ -61,6 +70,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
 
   const tabId = options.tabId
   const frameId = options.frameId
+  const view = options.view
 
   type Res = { data: MsgReturn<Key, Data> } | { error: ErrorObject } | null
 
@@ -69,9 +79,10 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
   // No tabId, send directly to background
   if (tabId === undefined) {
     res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
       id,
       data,
-      [MessageIdentifierKey]: 1,
+      view,
     })
   }
   // Send to tab and tabs API is available
@@ -82,21 +93,27 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
   ) {
     res = await browser.tabs.sendMessage(
       tabId === 'active' ? await getActiveTabId() : tabId,
-      { id, data, [MessageIdentifierKey]: 1 },
+      {
+        [MessageIdentifierKey]: 1,
+        id,
+        data,
+        view,
+      },
       frameId === undefined ? undefined : { frameId }
     )
   }
   // Send to tab and tabs API is not available, forward by background
   else {
     res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
       id: BackgroundForwardMessageId,
       data: {
         tabId,
         frameId,
         id,
         data,
+        view,
       },
-      [MessageIdentifierKey]: 1,
     })
   }
 
@@ -118,6 +135,9 @@ const pasiveListenersMap = new Map<string, Set<PassiveCallback>>()
 
 type OnMessageOptions<P extends boolean> = {
   passive?: P
+  signal?: AbortSignal
+  // TODO: 
+  // once?: boolean
 }
 
 // TODO: Allow add multiple listeners in one onMessage call
@@ -166,25 +186,48 @@ export function onMessage<K extends MsgKey>(
   options?: OnMessageOptions<boolean>,
 ) {
   const passive = options?.passive ?? false
+  const signal = options?.signal
 
   if (passive) {
     const listeners = pasiveListenersMap.get(id) ?? new Set()
     listeners.add(callback)
     pasiveListenersMap.set(id, listeners)
-    return () => listeners.delete(callback)
+    const removeListener = () => listeners.delete(callback)
+
+    if (signal) {
+      signal.addEventListener('abort', removeListener)
+    }
+
+    return () => {
+      removeListener()
+      if (signal) {
+        signal.removeEventListener('abort', removeListener)
+      }
+    }
   }
 
   const listener = listenersMap.get(id)
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   if (listener) throw new Error(`Message ID "${id}" already has a listener.`)
   listenersMap.set(id, callback)
-  return () => listenersMap.delete(id)
+  const removeListener = () => listenersMap.delete(id)
+  if (signal) {
+    signal.addEventListener('abort', removeListener)
+  }
+  return () => {
+    removeListener()
+    if (signal) {
+      signal.removeEventListener('abort', removeListener)
+    }
+  }
 }
 
 /**
  * 
  */
-let isBackground = false
+const isBackground = /* #__PURE__ */ isBackgroundPage()
+
+const isSidepanel = /* #__PURE__ */ isSidepanelPageSync()
 
 /**
  * Handle message from runtime.onMessage
@@ -198,6 +241,7 @@ export function webextHandleMessage(
        * Forwarded message sender
        */
       sender?: Runtime.MessageSender
+      view?: "sidebar"
       [MessageIdentifierKey]?: 1
     }
     | undefined,
@@ -209,6 +253,8 @@ export function webextHandleMessage(
     const res = handleForwardMessage(message, sender)
     if (res) return res
   }
+
+  if (message.view === "sidebar" && !(isSidepanel)) return
 
   const id = message.id
 
@@ -257,11 +303,12 @@ function handleForwardMessage(message:
   if (message.id !== BackgroundForwardMessageId) return
 
   return new Promise(async (resolve, reject) => {
-    const { tabId, frameId, id, data } = message.data as {
+    const { tabId, frameId, id, data, view } = message.data as {
       tabId: number | 'sender' | "active"
       frameId: number | undefined | 'sender'
       id: string
       data: unknown
+      view?: "sidebar"
     }
 
     let targetTabId: number
@@ -284,27 +331,13 @@ function handleForwardMessage(message:
         id,
         data,
         sender,
+        view,
         [MessageIdentifierKey]: 1,
       },
       targetFrameId === undefined ? undefined : { frameId: targetFrameId }
     ))
   })
 
-}
-
-/**
- * TODO: Check if the message is from side panel
- */
-function isSidePanel(sender: Runtime.MessageSender) {
-  if (sender.tab) return false
-}
-
-function isPopup() {
-  
-}
-
-export function backgroundForwardMessage() {
-  isBackground = true
 }
 
 // FIXME: side effects
@@ -316,19 +349,3 @@ if (browser.runtime.onMessage.hasListeners()) {
   browser.runtime.onMessage.addListener(webextHandleMessage)
 }
 
-function isTabsApiAvailable() {
-  return browser.tabs && typeof browser.tabs.sendMessage === 'function'
-}
-
-async function getActiveTabId() {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
-
-  if (!tab) throw new Error('No active tab')
-  const id = tab.id
-  if (id === undefined) throw new Error('No active tab id')
-  return id
-}
-
-function isAsyncFn(fn: (...args: any[]) => any): fn is (...args: any[]) => Promise<any> {
-  return fn.constructor.name === 'AsyncFunction'
-}
