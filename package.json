@@ -17,10 +17,7 @@
     "typescript"
   ],
   "exports": {
-    ".": "./dist/index.js",
-    "./storage": "./dist/storage.js",
-    "./message": "./dist/message.js",
-    "./stream": "./dist/stream.js"
+    ".": "./dist/index.js"
   },
   "author": "",
   "license": "MIT",
