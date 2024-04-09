@@ -195,7 +195,7 @@ export function onMessage<K extends MsgKey>(
     const removeListener = () => listeners.delete(callback)
 
     if (signal) {
-      signal.addEventListener('abort', removeListener)
+      signal.addEventListener('abort', removeListener, { once: true })
     }
 
     return () => {
@@ -281,14 +281,19 @@ export function webextHandleMessage(
   const listener = listenersMap.get(id)
   if (!listener) return
 
-  return Promise.resolve(listener({
-    id,
-    data: message.data,
-    sender,
-    originalSender: message.sender,
-  }))
-    .then(data => ({ data }))
-    .catch((error: Error) => ({ error: serializeError(error) }))
+  return new Promise(async (resolve) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/await-thenable
+      resolve(await listener({
+        id,
+        data: message.data,
+        sender,
+        originalSender: message.sender,
+      }))
+    } catch (error) {
+      resolve({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
+    }
+  })
 }
 
 function handleForwardMessage(message:
