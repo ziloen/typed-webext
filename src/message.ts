@@ -73,7 +73,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
   const frameId = options.frameId
   const view = options.view
 
-  type Res = { data: MsgReturn<Key, Data> } | { error: ErrorObject } | null
+  type Res = { data: MsgReturn<Key, Data> } | { error: ErrorObject } | null | undefined
 
   let res: Res
 
