@@ -257,11 +257,11 @@ export function webextHandleMessage(
   sendResponse: (response?: unknown) => void
 ) {
   if (message?.[MessageIdentifierKey] !== 1) {
-    return false as true
+    return
   }
 
   if (message.view === "sidebar" && !(isSidepanel)) {
-    return false as true
+    return
   }
 
   if (isBackground) {
@@ -293,7 +293,7 @@ export function webextHandleMessage(
   // Run the listener
   const listener = listenersMap.get(id)
   if (!listener) {
-    return false as true
+    return
   }
 
   ; (async () => {
