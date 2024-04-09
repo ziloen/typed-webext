@@ -255,14 +255,14 @@ export function webextHandleMessage(
   sender: Runtime.MessageSender,
   sendResponse: (response?: unknown) => void
 ) {
-  if (message?.[MessageIdentifierKey] !== 1) return
+  if (message?.[MessageIdentifierKey] !== 1) { return }
 
   if (isBackground) {
     const res = handleForwardMessage(message, sender)
-    if (res) return res
+    if (res) { return res }
   }
 
-  if (message.view === "sidebar" && !(isSidepanel)) return
+  if (message.view === "sidebar" && !(isSidepanel)) { return }
 
   const id = message.id
 
@@ -287,22 +287,22 @@ export function webextHandleMessage(
 
   // Run the listener
   const listener = listenersMap.get(id)
-  if (!listener) return
+  if (!listener) { return }
 
-    ; (async () => {
-      try {
-        sendResponse({
-          data: await listener({
-            id,
-            data: message.data,
-            sender,
-            originalSender: message.sender,
-          })
+  ; (async () => {
+    try {
+      sendResponse({
+        data: await listener({
+          id,
+          data: message.data,
+          sender,
+          originalSender: message.sender,
         })
-      } catch (error) {
-        sendResponse({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
-      }
-    })()
+      })
+    } catch (error) {
+      sendResponse({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
+    }
+  })()
 
   return true
 }
