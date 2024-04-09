@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-invalid-void-type */
 /* eslint-disable @typescript-eslint/await-thenable */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -255,14 +256,18 @@ export function webextHandleMessage(
   sender: Runtime.MessageSender,
   sendResponse: (response?: unknown) => void
 ) {
-  if (message?.[MessageIdentifierKey] !== 1) { return }
+  if (message?.[MessageIdentifierKey] !== 1) {
+    return false as true
+  }
+
+  if (message.view === "sidebar" && !(isSidepanel)) {
+    return false as true
+  }
 
   if (isBackground) {
     const res = handleForwardMessage(message, sender)
     if (res) { return res }
   }
-
-  if (message.view === "sidebar" && !(isSidepanel)) { return }
 
   const id = message.id
 
@@ -287,7 +292,9 @@ export function webextHandleMessage(
 
   // Run the listener
   const listener = listenersMap.get(id)
-  if (!listener) { return }
+  if (!listener) {
+    return false as true
+  }
 
   ; (async () => {
     try {
