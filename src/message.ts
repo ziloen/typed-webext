@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
@@ -117,10 +118,16 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
     })
   }
 
-  if (res === null || res === undefined) {
+  // when null, message is already handled by other listeners
+  if (res === null) {
     throw new Error(
-      'null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners or no listener.'
+      `null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners for message "${id}".`
     )
+  }
+
+  // when undefined, no listener for the message, or the listener return undefined
+  if (res === undefined) {
+    throw new Error(`undefined from runtime.sendMessage. No listener for message "${id}". or the listener return undefined.`)
   }
 
   if (Object.hasOwn(res, 'error')) {
@@ -207,7 +214,6 @@ export function onMessage<K extends MsgKey>(
   }
 
   const listener = listenersMap.get(id)
-  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   if (listener) throw new Error(`Message ID "${id}" already has a listener.`)
   listenersMap.set(id, callback)
   const removeListener = () => listenersMap.delete(id)
