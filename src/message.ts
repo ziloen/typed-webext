@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/await-thenable */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { ErrorObject } from 'serialize-error'
@@ -251,7 +252,8 @@ export function webextHandleMessage(
       [MessageIdentifierKey]?: 1
     }
     | undefined,
-  sender: Runtime.MessageSender
+  sender: Runtime.MessageSender,
+  sendResponse: (response?: unknown) => void
 ) {
   if (message?.[MessageIdentifierKey] !== 1) return
 
@@ -287,19 +289,22 @@ export function webextHandleMessage(
   const listener = listenersMap.get(id)
   if (!listener) return
 
-  return new Promise(async (resolve) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/await-thenable
-      resolve(await listener({
-        id,
-        data: message.data,
-        sender,
-        originalSender: message.sender,
-      }))
-    } catch (error) {
-      resolve({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
-    }
-  })
+    ; (async () => {
+      try {
+        sendResponse({
+          data: await listener({
+            id,
+            data: message.data,
+            sender,
+            originalSender: message.sender,
+          })
+        })
+      } catch (error) {
+        sendResponse({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
+      }
+    })()
+
+  return true
 }
 
 function handleForwardMessage(message:
