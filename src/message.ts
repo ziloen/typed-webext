@@ -197,6 +197,10 @@ export function onMessage<K extends MsgKey>(
   const passive = options?.passive ?? false
   const signal = options?.signal
 
+  if (signal?.aborted) {
+    return () => { }
+  }
+
   if (passive) {
     const listeners = pasiveListenersMap.get(id) ?? new Set()
     listeners.add(callback)
