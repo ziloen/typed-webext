@@ -192,10 +192,10 @@ export function onMessage<K extends MsgKey>(
 export function onMessage<K extends MsgKey>(
   id: K,
   callback: MsgCallback<MsgData<K>, MsgReturn<K>>,
-  options?: OnMessageOptions<boolean>,
+  options: OnMessageOptions<boolean> = {},
 ) {
-  const passive = options?.passive ?? false
-  const signal = options?.signal
+  const passive = options.passive ?? false
+  const signal = options.signal
 
   if (signal?.aborted) {
     return () => { }
