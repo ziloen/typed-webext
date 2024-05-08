@@ -289,7 +289,9 @@ export function webextHandleMessage(
 
   if (isBackground) {
     const res = handleForwardMessage(message, sender)
-    if (res) { return res }
+    if (res) {
+      return res
+    }
   }
 
   const id = message.id
@@ -372,13 +374,13 @@ function handleForwardMessage(message:
     const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
 
     if (destination === "content-script" && targetTabId === undefined) {
-      resolve({
+      resolve(browser.runtime.sendMessage({
         [MessageIdentifierKey]: 1,
         id,
         data,
         sender,
         destination,
-      })
+      }))
 
       return
     }
