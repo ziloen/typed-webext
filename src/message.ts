@@ -279,19 +279,19 @@ export function webextHandleMessage(
     return
   }
 
+  if (isBackground) {
+    const res = handleForwardMessage(message, sender)
+    if (res) {
+      return res
+    }
+  }
+
   if (message.destination === "sidebar" && !(isSidepanel)) {
     return
   }
 
   if (message.destination === "content-script" && !(isContentScript)) {
     return
-  }
-
-  if (isBackground) {
-    const res = handleForwardMessage(message, sender)
-    if (res) {
-      return res
-    }
   }
 
   const id = message.id
