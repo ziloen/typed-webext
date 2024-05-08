@@ -8,7 +8,7 @@ import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from "webextension-polyfill"
 import type { MessageProtocol } from './index'
-import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId } from './util'
+import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId, isContentScriptPage } from './util'
 
 
 const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
@@ -56,12 +56,12 @@ type SendMessageOptions = {
   tabId?: number | undefined | 'sender' | "active"
   frameId?: number | undefined | 'sender'
   /**
-   * The view type of the message.
+   * The destination of the message.
    * 
    * - `'sidebar'`: The message will be sent to the sidebar / side panel.
    * - `'popup'`: The message will be sent to the popup.
    */
-  view?: /* "tab" | "popup" | */ "sidebar"
+  destination?: "content-script" | "sidebar"  /* | "background" | "popup" | "options" | "devtools" */
 }
 
 export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>(...args: SendParams<Key, Data>) {
@@ -73,19 +73,32 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
 
   const tabId = options.tabId
   const frameId = options.frameId
-  const view = options.view
+  const destination = options.destination
 
   type Res = { data: MsgReturn<Key, Data> } | { error: ErrorObject } | null | undefined
 
   let res: Res
 
+  if (destination === "content-script" && isContentScript) {
+    res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
+      id: BackgroundForwardMessageId,
+      data: {
+        tabId,
+        frameId,
+        id,
+        data,
+        destination,
+      },
+    })
+  }
   // No tabId, send directly to background
-  if (tabId === undefined) {
+  else if (tabId === undefined) {
     res = await browser.runtime.sendMessage({
       [MessageIdentifierKey]: 1,
       id,
       data,
-      view,
+      destination,
     })
   }
   // Send to tab and tabs API is available
@@ -100,7 +113,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
         [MessageIdentifierKey]: 1,
         id,
         data,
-        view,
+        destination,
       },
       frameId === undefined ? undefined : { frameId }
     )
@@ -115,7 +128,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
         frameId,
         id,
         data,
-        view,
+        destination,
       },
     })
   }
@@ -241,6 +254,8 @@ const isBackground = /* #__PURE__ */ isBackgroundPage()
 
 const isSidepanel = /* #__PURE__ */ isSidepanelPageSync()
 
+const isContentScript = /* #__PURE__ */ isContentScriptPage()
+
 /**
  * Handle message from runtime.onMessage
  */
@@ -253,7 +268,7 @@ export function webextHandleMessage(
        * Forwarded message sender
        */
       sender?: Runtime.MessageSender
-      view?: "sidebar"
+      destination?: "sidebar" | "content-script"
       [MessageIdentifierKey]?: 1
     }
     | undefined,
@@ -264,7 +279,11 @@ export function webextHandleMessage(
     return
   }
 
-  if (message.view === "sidebar" && !(isSidepanel)) {
+  if (message.destination === "sidebar" && !(isSidepanel)) {
+    return
+  }
+
+  if (message.destination === "content-script" && !(isContentScript)) {
     return
   }
 
@@ -330,15 +349,15 @@ function handleForwardMessage(message:
   if (message.id !== BackgroundForwardMessageId) return
 
   return new Promise(async (resolve, reject) => {
-    const { tabId, frameId, id, data, view } = message.data as {
-      tabId: number | 'sender' | "active"
+    const { tabId, frameId, id, data, destination: destination } = message.data as {
+      tabId: number | 'sender' | "active" | undefined
       frameId: number | undefined | 'sender'
       id: string
       data: unknown
-      view?: "sidebar"
+      destination?: "sidebar" | "content-script"
     }
 
-    let targetTabId: number
+    let targetTabId: number | undefined
     try {
       targetTabId = tabId === 'sender'
         ? sender.tab!.id!
@@ -352,13 +371,25 @@ function handleForwardMessage(message:
 
     const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
 
+    if (destination === "content-script" && targetTabId === undefined) {
+      resolve({
+        [MessageIdentifierKey]: 1,
+        id,
+        data,
+        sender,
+        destination,
+      })
+
+      return
+    }
+
     resolve(browser.tabs.sendMessage(
-      targetTabId,
+      targetTabId!,
       {
         id,
         data,
         sender,
-        view,
+        destination,
         [MessageIdentifierKey]: 1,
       },
       targetFrameId === undefined ? undefined : { frameId: targetFrameId }

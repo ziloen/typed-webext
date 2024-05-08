@@ -6,7 +6,7 @@ import * as browser from "webextension-polyfill"
 /* #__NO_SIDE_EFFECTS__ */
 export function isBackgroundPage() {
   // Chromium
-  if (!('serviceWorker' in navigator) && !browser.extension.getViews) {
+  if (!('serviceWorker' in navigator) && browser.extension && !browser.extension.getViews) {
     return true
   }
 
