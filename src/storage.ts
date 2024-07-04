@@ -34,7 +34,7 @@ export async function getStorageLocal<K extends Key>(
 export async function getStorageLocal<
   K extends Key,
   V = StorageValue<K>,
-  const D = V
+  D = V
 >(
   key: K,
   defaultValue: D
