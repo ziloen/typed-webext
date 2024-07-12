@@ -4,6 +4,19 @@ import type { StorageLocalProtocol } from './index'
 type Key = keyof StorageLocalProtocol
 type StorageValue<K extends Key> = StorageLocalProtocol[K]
 
+type ValueWithDefault<
+  Value,
+  Default,
+  DT = Default extends readonly [] ? [] : Default
+> = DT extends Value ? Value : Value | Default
+
+type ObjectDefaults<Defaults> = {
+  -readonly [K in keyof Defaults]:
+  K extends keyof StorageLocalProtocol
+  ? ValueWithDefault<StorageLocalProtocol[K], Defaults[K]>
+  : Defaults[K]
+}
+
 /**
  * Get storage.local value
  * @example
@@ -34,11 +47,11 @@ export async function getStorageLocal<K extends Key>(
 export async function getStorageLocal<
   K extends Key,
   V = StorageValue<K>,
-  D = V
+  const D = V
 >(
   key: K,
   defaultValue: D
-): Promise<D extends V ? V : V | D>
+): Promise<ValueWithDefault<V, D>>
 /**
  * Get multiple storage.local values
  * @example
@@ -68,20 +81,14 @@ export async function getStorageLocal<const K extends Key>(key: K[]): Promise<{
  * //    ^ { a: number, b: string }
  * ```
  */
-export async function getStorageLocal<O extends { [K in Key]?: unknown }>(
+export async function getStorageLocal<const O = Partial<StorageLocalProtocol>>(
   obj: O
-): Promise<{
-  [K in keyof O]: K extends Key
-  ? O[K] extends StorageValue<K>
-  ? StorageValue<K>
-  : StorageValue<K> | O[K]
-  : O[K]
-}>
+): Promise<ObjectDefaults<O>>
 export async function getStorageLocal(
   key: string | string[] | Record<string, unknown>,
   defaultValue?: unknown
 ) {
-  const result = await browser.storage.local.get(key)
+  const result = await /* #__PURE__ */ browser.storage.local.get(key)
   if (typeof key === 'string') {
     // If key exists in storage.local
     if (Object.hasOwn(result, key)) {
