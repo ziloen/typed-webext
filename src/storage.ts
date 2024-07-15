@@ -4,11 +4,13 @@ import type { StorageLocalProtocol } from './index'
 type Key = keyof StorageLocalProtocol
 type StorageValue<K extends Key> = StorageLocalProtocol[K]
 
+type MakeArrayReadonly<T> = T extends unknown[] ? readonly T[number][] : T
+type MakeArrayWritable<T> = T extends readonly unknown[] ? T[number][] : T
+
 type ValueWithDefault<
   Value,
   Default,
-  DT = Default extends readonly [] ? [] : Default
-> = DT extends Value ? Value : Value | Default
+> = Default extends MakeArrayReadonly<Value> ? Value : Value | MakeArrayWritable<Default>
 
 type ObjectDefaults<Defaults> = {
   -readonly [K in keyof Defaults]:
@@ -91,7 +93,7 @@ export async function getStorageLocal(
   const result = await /* #__PURE__ */ browser.storage.local.get(key)
   if (typeof key === 'string') {
     // If key exists in storage.local
-    if (Object.hasOwn(result, key)) {
+    if (/* #__PURE__ */ Object.hasOwn(result, key)) {
       return result[key] as unknown
     }
 
