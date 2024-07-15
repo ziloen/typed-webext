@@ -1,6 +1,6 @@
 import type { Runtime } from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
-import * as browser from "webextension-polyfill"
+import * as browser from 'webextension-polyfill'
 
 const noop = (() => { }) as (...args: any[]) => void
 
@@ -149,7 +149,7 @@ export function onOpenStream<T extends StreamKey>(
   callback: StreamCallback<StreamReturn<T>, StreamData<T>>
 ) {
   const listener = listeners.get(channel)
-  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+
   if (listener) throw new Error(`Channel "${channel}" already has a listener.`)
   listeners.set(channel, callback)
   return () => listeners.delete(channel)

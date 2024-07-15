@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-invalid-void-type */
+
 /* eslint-disable @typescript-eslint/await-thenable */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -6,7 +6,7 @@ import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
 import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
-import * as browser from "webextension-polyfill"
+import * as browser from 'webextension-polyfill'
 import type { MessageProtocol } from './index'
 import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId, isContentScriptPage } from './util'
 
@@ -53,7 +53,7 @@ type SendMessageOptions = {
    * - `'active'`: The message will be sent to the active tab.
    * - `number`: The ID of the tab which the message will be sent to.
    */
-  tabId?: number | undefined | 'sender' | "active"
+  tabId?: number | undefined | 'sender' | 'active'
   frameId?: number | undefined | 'sender'
   /**
    * The destination of the message.
@@ -61,7 +61,7 @@ type SendMessageOptions = {
    * - `'sidebar'`: The message will be sent to the sidebar / side panel.
    * - `'popup'`: The message will be sent to the popup.
    */
-  destination?: "content-script" | "sidebar"  /* | "background" | "popup" | "options" | "devtools" */
+  destination?: 'content-script' | 'sidebar' /* | "background" | "popup" | "options" | "devtools" */
 }
 
 export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>(...args: SendParams<Key, Data>) {
@@ -79,7 +79,7 @@ export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>
 
   let res: Res
 
-  if (destination === "content-script" && isContentScript) {
+  if (destination === 'content-script' && isContentScript) {
     res = await browser.runtime.sendMessage({
       [MessageIdentifierKey]: 1,
       id: BackgroundForwardMessageId,
@@ -268,7 +268,7 @@ export function webextHandleMessage(
        * Forwarded message sender
        */
       sender?: Runtime.MessageSender
-      destination?: "sidebar" | "content-script"
+      destination?: 'sidebar' | 'content-script'
       [MessageIdentifierKey]?: 1
     }
     | undefined,
@@ -286,11 +286,11 @@ export function webextHandleMessage(
     }
   }
 
-  if (message.destination === "sidebar" && !(isSidepanel)) {
+  if (message.destination === 'sidebar' && !isSidepanel) {
     return
   }
 
-  if (message.destination === "content-script" && !(isContentScript)) {
+  if (message.destination === 'content-script' && !isContentScript) {
     return
   }
 
@@ -321,7 +321,7 @@ export function webextHandleMessage(
     return
   }
 
-  ; (async () => {
+  (async () => {
     try {
       sendResponse({
         data: await listener({
@@ -332,15 +332,15 @@ export function webextHandleMessage(
         })
       })
     } catch (error) {
-      sendResponse({ error: serializeError(error instanceof Error ? error : new Error("Unknown error", { cause: error })) })
+      sendResponse({ error: serializeError(error instanceof Error ? error : new Error('Unknown error', { cause: error })) })
     }
   })()
 
   return true
 }
 
-function handleForwardMessage(message:
-  {
+function handleForwardMessage(
+  message: {
     id?: string
     data?: unknown
     [MessageIdentifierKey]?: 1
@@ -351,19 +351,19 @@ function handleForwardMessage(message:
   if (message.id !== BackgroundForwardMessageId) return
 
   return new Promise(async (resolve, reject) => {
-    const { tabId, frameId, id, data, destination: destination } = message.data as {
-      tabId: number | 'sender' | "active" | undefined
+    const { tabId, frameId, id, data, destination } = message.data as {
+      tabId: number | 'sender' | 'active' | undefined
       frameId: number | undefined | 'sender'
       id: string
       data: unknown
-      destination?: "sidebar" | "content-script"
+      destination?: 'sidebar' | 'content-script'
     }
 
     let targetTabId: number | undefined
     try {
       targetTabId = tabId === 'sender'
         ? sender.tab!.id!
-        : tabId === "active"
+        : tabId === 'active'
           ? await getActiveTabId()
           : tabId
     } catch (error) {
@@ -373,7 +373,7 @@ function handleForwardMessage(message:
 
     const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
 
-    if (destination === "content-script" && targetTabId === undefined) {
+    if (destination === 'content-script' && targetTabId === undefined) {
       resolve(browser.runtime.sendMessage({
         [MessageIdentifierKey]: 1,
         id,
