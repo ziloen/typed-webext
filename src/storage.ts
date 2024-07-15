@@ -1,11 +1,15 @@
-import * as browser from "webextension-polyfill"
+import * as browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 
 type Key = keyof StorageLocalProtocol
 type StorageValue<K extends Key> = StorageLocalProtocol[K]
 
-type MakeArrayReadonly<T> = T extends unknown[] ? readonly T[number][] : T
-type MakeArrayWritable<T> = T extends readonly unknown[] ? T[number][] : T
+type MakeArrayReadonly<T> = T extends (infer U)[] ? readonly U[] : T
+type MakeArrayWritable<T> = T extends readonly (infer U)[]
+  ? T extends unknown[]
+    ? T
+    : U[]
+  : T
 
 type ValueWithDefault<
   Value,
@@ -15,8 +19,8 @@ type ValueWithDefault<
 type ObjectDefaults<Defaults> = {
   -readonly [K in keyof Defaults]:
   K extends keyof StorageLocalProtocol
-  ? ValueWithDefault<StorageLocalProtocol[K], Defaults[K]>
-  : Defaults[K]
+    ? ValueWithDefault<StorageLocalProtocol[K], Defaults[K]>
+    : Defaults[K]
 }
 
 /**
@@ -138,7 +142,7 @@ export async function setStorageLocal<K extends Key>(
   value: StorageValue<K>
 ): Promise<void>
 export async function setStorageLocal(items: string | Record<string, any>, value?: unknown) {
-  if (typeof items === "string") {
+  if (typeof items === 'string') {
     return browser.storage.local.set({ [items]: value })
   } else {
     return browser.storage.local.set(items)
