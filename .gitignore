@@ -1,4 +1,5 @@
 .tsup
+tsconfig.vitest-temp.json
 
 # Logs
 logs
