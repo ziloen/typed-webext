@@ -25,7 +25,9 @@ export interface MessageProtocol<T = unknown> {
  */
 export interface StorageLocalProtocol {
   /** @internal */
-  __test__: string[]
+  __test__string_literal: 'A' | 'B'
+  /** @internal */
+  __test__string_array: string[]
 }
 
 
