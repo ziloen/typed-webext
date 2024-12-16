@@ -1,21 +1,17 @@
-
-/* eslint-disable @typescript-eslint/await-thenable */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
 import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from 'webextension-polyfill'
 import type { MessageProtocol } from './index'
-import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId, isContentScriptPage } from './util'
+import { isBackgroundPage, isTabsApiAvailable, isSidepanelPageSync, getActiveTabId, isContentScriptPage, asType } from './util'
 
 
 const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
 
 const MessageIdentifierKey = '__webext_message_identifier__'
 
-type Message<Data> = {
+interface Message<Data> {
   id: string
   /**
    * The sender of the message
@@ -44,7 +40,7 @@ type SendParams<K extends MsgKey, D> = IfNever<
   [id: K, data: D, options?: SendMessageOptions]
 >
 
-type SendMessageOptions = {
+interface SendMessageOptions {
   /**
    * The ID of the tab which the message will be sent to.
    * 
@@ -64,7 +60,10 @@ type SendMessageOptions = {
   destination?: 'content-script' | 'sidebar' /* | "background" | "popup" | "options" | "devtools" */
 }
 
-export async function sendMessage<Key extends MsgKey, Data extends MsgData<Key>>(...args: SendParams<Key, Data>) {
+export async function sendMessage<
+  Key extends MsgKey,
+  Data extends MsgData<Key>
+>(...args: SendParams<Key, Data>): Promise<MsgReturn<Key, Data>> {
   if (!browser.runtime.id) {
     throw new Error('Extension context is not available.')
   }
@@ -162,7 +161,6 @@ type OnMessageOptions<P extends boolean> = {
   // once?: boolean
 }
 
-// TODO: Allow add multiple listeners in one onMessage call
 /**
  * Add a passive listener to the message channel.
  *
@@ -260,24 +258,24 @@ const isContentScript = /* #__PURE__ */ isContentScriptPage()
  * Handle message from runtime.onMessage
  */
 export function webextHandleMessage(
-  message:
-    | {
-      id: MsgKey
-      data: MsgData<MsgKey>
-      /** 
-       * Forwarded message sender
-       */
-      sender?: Runtime.MessageSender
-      destination?: 'sidebar' | 'content-script'
-      [MessageIdentifierKey]?: 1
-    }
-    | undefined,
+  message: unknown,
   sender: Runtime.MessageSender,
-  sendResponse: (response?: unknown) => void
-) {
-  if (message?.[MessageIdentifierKey] !== 1) {
+  sendResponse: (response: unknown) => void
+): true | undefined | Promise<unknown> {
+  if (!message || typeof message !== 'object' || Reflect.get(message, MessageIdentifierKey) !== 1) {
     return
   }
+
+  asType<{
+    id: MsgKey
+    data: MsgData<MsgKey>
+    /** 
+     * Forwarded message sender
+     */
+    sender?: Runtime.MessageSender
+    destination?: 'sidebar' | 'content-script'
+    [MessageIdentifierKey]?: 1
+  }>(message)
 
   if (isBackground) {
     const res = handleForwardMessage(message, sender)
@@ -401,11 +399,5 @@ function handleForwardMessage(
 }
 
 // FIXME: side effects
-if (browser.runtime.onMessage.hasListeners()) {
-  throw new Error(
-    `runtime.onMessage already has listeners, typed-webext/message can't handle message.`
-  )
-} else {
-  browser.runtime.onMessage.addListener(webextHandleMessage)
-}
+browser.runtime.onMessage.addListener(webextHandleMessage)
 

@@ -45,6 +45,8 @@
     // "isolatedModules": false,
     // "verbatimModuleSyntax": false,
     "allowSyntheticDefaultImports": true,
+    "isolatedDeclarations": true,
+    "declaration": true,
     "esModuleInterop": true,
     /**
      * ===== Output Formatting =====

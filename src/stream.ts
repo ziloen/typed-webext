@@ -1,7 +1,9 @@
 import type { Runtime } from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
 import * as browser from 'webextension-polyfill'
+import { asType } from './util'
 
+/* #__NO_SIDE_EFFECTS__ */
 const noop = (() => { }) as (...args: any[]) => void
 
 type StreamKey = keyof StreamProtocol
@@ -11,7 +13,7 @@ type StreamReturn<Key extends StreamKey> = StreamProtocol[Key][1]
 /**
  * Stream interface for sending and receiving messages
  */
-type Stream<SendData = unknown, MsgData = unknown> = {
+interface Stream<SendData = unknown, MsgData = unknown> {
   /**
    * The port connecting the two ends of the stream
    */
@@ -88,12 +90,13 @@ function createStream<T = unknown, K = unknown>(
     abortController.abort()
   })
 
-  function onClose(callback: () => void) {
+  function onClose(callback: (port: Runtime.Port) => void) {
     port.onDisconnect.addListener(callback)
     return () => browser.runtime.id && port.onDisconnect.removeListener(callback)
   }
 
-  function onMessage(callback: (msg: K) => void) {
+  function onMessage(callback: (message: K, port: Runtime.Port) => void) {
+    asType<(message: unknown, port: Runtime.Port) => void>(callback)
     port.onMessage.addListener(callback)
     return () => browser.runtime.id && port.onMessage.removeListener(callback)
   }
@@ -102,7 +105,7 @@ function createStream<T = unknown, K = unknown>(
     port,
     signal: abortController.signal,
     // avoid sending message after disconnect
-    send: msg => connected && port.postMessage(msg),
+    send: (msg) => connected && port.postMessage(msg),
     close: () => {
       if (!connected) return
       connected = false
@@ -113,7 +116,7 @@ function createStream<T = unknown, K = unknown>(
     async *iter(...args) {
       let resolve: (value: K) => void
 
-      const cleanupOnMessage = onMessage(msg => resolve(msg))
+      const cleanupOnMessage = onMessage((msg) => resolve(msg))
       const cleanupOnDisconnect = onClose(() => (resolve = noop))
 
       if (args.length) port.postMessage(args[0])
@@ -121,7 +124,7 @@ function createStream<T = unknown, K = unknown>(
       try {
         while (true) {
           // eslint-disable-next-line @typescript-eslint/no-loop-func
-          yield new Promise<K>(r => (resolve = r))
+          yield new Promise<K>((r) => (resolve = r))
         }
       } finally {
         cleanupOnMessage()
@@ -147,12 +150,12 @@ function createStream<T = unknown, K = unknown>(
 export function onOpenStream<T extends StreamKey>(
   channel: T,
   callback: StreamCallback<StreamReturn<T>, StreamData<T>>
-) {
+): () => void {
   const listener = listeners.get(channel)
 
   if (listener) throw new Error(`Channel "${channel}" already has a listener.`)
   listeners.set(channel, callback)
-  return () => listeners.delete(channel)
+  return () => { listeners.delete(channel) }
 }
 
 /**
@@ -174,7 +177,9 @@ export function onOpenStream<T extends StreamKey>(
  * }
  * ```
  */
-export function openStream<T extends StreamKey>(channel: T) {
+export function openStream<
+  T extends StreamKey
+>(channel: T): Stream<StreamData<T>, StreamReturn<T>> {
   const port = browser.runtime.connect({ name: channel })
   return createStream<StreamData<T>, StreamReturn<T>>(port)
 }
@@ -182,7 +187,7 @@ export function openStream<T extends StreamKey>(channel: T) {
 /**
  * Handle stream from runtime.onConnect
  */
-export function webextHandleStream(port: Runtime.Port) {
+export function webextHandleStream(port: Runtime.Port): void {
   const channel = port.name
   const listener = listeners.get(channel)
 
@@ -195,12 +200,5 @@ export function webextHandleStream(port: Runtime.Port) {
 }
 
 // side effects
-if (
-  browser.runtime.onConnect.hasListeners()
-) {
-  console.error(`runtime.onConnect has listeners, typed-webext/stream can't handle stream.`)
-} else {
-  browser.runtime.onConnect.addListener(webextHandleStream)
-}
-
+browser.runtime.onConnect.addListener(webextHandleStream)
 

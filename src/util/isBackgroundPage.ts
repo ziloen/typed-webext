@@ -1,10 +1,10 @@
-import * as browser from "webextension-polyfill"
+import * as browser from 'webextension-polyfill'
 
 /**
  * Check if the current page is the background page
  */
 /* #__NO_SIDE_EFFECTS__ */
-export function isBackgroundPage() {
+export function isBackgroundPage(): boolean {
   // Chromium
   if (!('serviceWorker' in navigator) && browser.extension && !browser.extension.getViews) {
     return true

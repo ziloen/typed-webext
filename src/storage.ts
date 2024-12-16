@@ -1,5 +1,6 @@
 import * as browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
+import { fromEventPattern, share, type Observable } from 'rxjs'
 
 type Key = keyof StorageLocalProtocol
 type StorageValue<K extends Key> = StorageLocalProtocol[K]
@@ -39,6 +40,10 @@ export async function getStorageLocal<K extends Key>(
   key: K
 ): Promise<StorageValue<K> | undefined>
 /**
+ * Get storage.local value that key does not exist on `StorageLocalProtocol`
+ */
+export async function getStorageLocal(key: string): Promise<unknown>
+/**
  * Get storage.local value with default value
  * @example
  * ```ts
@@ -58,6 +63,13 @@ export async function getStorageLocal<
   key: K,
   defaultValue: D
 ): Promise<ValueWithDefault<V, D>>
+/**
+ * Get storage.local value with default value that key does not exist on `StorageLocalProtocol`
+ */
+export async function getStorageLocal<D>(
+  key: string,
+  defaultValue: D
+): Promise<D>
 /**
  * Get multiple storage.local values
  * @example
@@ -87,8 +99,11 @@ export async function getStorageLocal<const K extends Key>(key: K[]): Promise<{
  * //    ^ { a: number, b: string }
  * ```
  */
-export async function getStorageLocal<const O = Partial<StorageLocalProtocol>>(
-  obj: O
+export async function getStorageLocal<const O extends Record<string, any>>(
+  obj:
+    | O
+    // `in keyof` is needed to preseve JSDoc
+    | ({ [K in keyof StorageLocalProtocol]: StorageValue<K> | NoInfer<O>[K] } & Record<string, any>)
 ): Promise<ObjectDefaults<O>>
 export async function getStorageLocal(
   key: string | string[] | Record<string, unknown>,
@@ -98,18 +113,18 @@ export async function getStorageLocal(
   if (typeof key === 'string') {
     // If key exists in storage.local
     if (/* #__PURE__ */ Object.hasOwn(result, key)) {
-      return result[key] as unknown
+      return result[key]
     }
 
     // If key does not exist in storage.local
-    return defaultValue as unknown
+    return defaultValue
   } else {
-    return result as unknown
+    return result
   }
 }
 
-export async function removeStorageLocal<K extends Key>(key: K): Promise<void>
-export async function removeStorageLocal<K extends Key>(key: K[]): Promise<void>
+export async function removeStorageLocal(key: Key): Promise<void>
+export async function removeStorageLocal(key: Key[]): Promise<void>
 export async function removeStorageLocal(key: string | string[]) {
   return browser.storage.local.remove(key)
 }
@@ -165,8 +180,18 @@ type StorageLocalChange =
     }
   }
 
-export function onStorageLocalChanged(callback: (changes: StorageLocalChange) => void) {
+export function onStorageLocalChanged(callback: (changes: StorageLocalChange) => void): () => void {
   browser.storage.local.onChanged.addListener(callback)
 
   return () => browser.storage.local.onChanged.removeListener(callback)
 }
+
+
+/**
+ * Shared observable for storage.local changes
+ */
+export const storageLocalChanged$: Observable<StorageLocalChange> = /* #__PURE__ */ fromEventPattern(
+  (handler) => browser.storage.onChanged.addListener(handler),
+  (handler) => browser.runtime.id && browser.storage.onChanged.removeListener(handler),
+  (changes: StorageLocalChange) => changes
+).pipe(/* #__PURE__ */ share({ resetOnRefCountZero: true }))
