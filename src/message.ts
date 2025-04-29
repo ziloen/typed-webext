@@ -399,5 +399,5 @@ function handleForwardMessage(
 }
 
 // FIXME: side effects
-browser.runtime.onMessage.addListener(webextHandleMessage)
+browser.runtime.onMessage.addListener(webextHandleMessage as any)
 
