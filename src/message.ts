@@ -261,7 +261,7 @@ export function webextHandleMessage(
   message: unknown,
   sender: Runtime.MessageSender,
   sendResponse: (response: unknown) => void
-): true | undefined | Promise<unknown> {
+): true | Promise<unknown> | void {
   if (!message || typeof message !== 'object' || Reflect.get(message, MessageIdentifierKey) !== 1) {
     return
   }
