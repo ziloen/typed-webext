@@ -34,10 +34,10 @@ type MsgCallback<Data = MsgData<MsgKey>, Return = MsgReturn<MsgKey>> = (
 
 type PassiveCallback<Data = MsgData<MsgKey>> = (message: Message<Data>) => void
 
-type SendParams<K extends MsgKey, D> = IfNever<
+type SendParams<D> = IfNever<
   D,
-  [id: K, data?: undefined | null, options?: SendMessageOptions],
-  [id: K, data: D, options?: SendMessageOptions]
+  [data?: undefined | null, options?: SendMessageOptions],
+  [data: D, options?: SendMessageOptions]
 >
 
 interface SendMessageOptions {
@@ -62,13 +62,11 @@ interface SendMessageOptions {
 
 export async function sendMessage<
   Key extends MsgKey,
-  Data extends MsgData<Key>
->(...args: SendParams<Key, Data>): Promise<MsgReturn<Key, Data>> {
+  Data extends MsgData<NoInfer<Key>>
+>(id: Key, ...[data, options = {}]: SendParams<Data>): Promise<MsgReturn<Key, Data>> {
   if (!browser.runtime.id) {
     throw new Error('Extension context is not available.')
   }
-
-  const [id, data, options = {}] = args
 
   const tabId = options.tabId
   const frameId = options.frameId
@@ -202,7 +200,7 @@ export function onMessage<K extends MsgKey>(
 ): () => void
 export function onMessage<K extends MsgKey>(
   id: K,
-  callback: MsgCallback<MsgData<K>, MsgReturn<K>>,
+  callback: MsgCallback<MsgData<NoInfer<K>>, MsgReturn<NoInfer<K>>>,
   options: OnMessageOptions<boolean> = {},
 ) {
   const passive = options.passive ?? false
