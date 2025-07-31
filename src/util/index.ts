@@ -1,9 +1,8 @@
 import * as browser from 'webextension-polyfill'
 
-export { isSidepanelPage, isSidepanelPageSync } from './isSidepanelPage'
 export { isBackgroundPage } from './isBackgroundPage'
 export { isContentScriptPage } from './isContentScriptPage'
-
+export { isSidepanelPage, isSidepanelPageSync } from './isSidepanelPage'
 
 /**
  * Check if the tabs API is available
@@ -13,10 +12,8 @@ export function isTabsApiAvailable(): boolean {
   return !!browser.tabs && typeof browser.tabs.sendMessage === 'function'
 }
 
-
 /** @internal */
 /*#__NO_SIDE_EFFECTS__*/
-// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function asType<T>(value: any): asserts value is T {}
 
 /* #__NO_SIDE_EFFECTS__ */
@@ -25,10 +22,7 @@ export function isSenderSidepanel(sender: browser.Runtime.MessageSender): void {
 }
 
 /* #__NO_SIDE_EFFECTS__ */
-export function isPopupPage(): void {
-
-}
-
+export function isPopupPage(): void {}
 
 export async function getActiveTabId(): Promise<number> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
@@ -38,3 +32,6 @@ export async function getActiveTabId(): Promise<number> {
   if (id === undefined) throw new Error('No active tab id')
   return id
 }
+
+/* #__NO_SIDE_EFFECTS__ */
+export const noop = (() => {}) as (...args: any[]) => void

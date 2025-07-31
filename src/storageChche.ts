@@ -40,9 +40,12 @@ class StorageCache {
     return cacheObj
   }
 
-  watch(keys: string[], updateCallback: (data: Record<string, CacheObj>) => void) {
+  watch(
+    keys: string[],
+    updateCallback: (data: Record<string, CacheObj>) => void,
+  ) {
     const subscription = this.#update$.subscribe((updateKeys) => {
-      const needUpdate = intersects(updateKeys, keys)
+      const needUpdate = hasIntersection(updateKeys, keys)
 
       if (needUpdate) {
         const newData = this.getData(keys)
@@ -72,7 +75,7 @@ class StorageCache {
         this.#fetchingKeys.delete(key)
         this.#cache.set(key, {
           data: data[key],
-          exists: Object.hasOwn(data, key)
+          exists: Object.hasOwn(data, key),
         })
       }
 
@@ -88,7 +91,7 @@ class StorageCache {
         if (this.#cache.has(key)) {
           this.#cache.set(key, {
             data: change!.newValue,
-            exists: Object.hasOwn(change!, 'newValue')
+            exists: Object.hasOwn(change!, 'newValue'),
           })
         }
       }
@@ -98,14 +101,13 @@ class StorageCache {
   }
 }
 
-function intersects<T>(a: T[], b: T[]) {
+function hasIntersection<T>(a: T[], b: T[]) {
   return a.some((v) => b.includes(v))
 }
 
-
 function buildState(
   newState: Record<string, CacheObj>,
-  defaultState: string[] | Record<string, unknown>
+  defaultState: string[] | Record<string, unknown>,
 ) {
   if (Array.isArray(defaultState)) {
     const state: Record<string, unknown> = {}

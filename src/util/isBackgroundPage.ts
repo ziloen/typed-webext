@@ -6,7 +6,11 @@ import * as browser from 'webextension-polyfill'
 /* #__NO_SIDE_EFFECTS__ */
 export function isBackgroundPage(): boolean {
   // Chromium
-  if (!('serviceWorker' in navigator) && browser.extension && !browser.extension.getViews) {
+  if (
+    !('serviceWorker' in navigator) &&
+    browser.extension &&
+    !browser.extension.getViews
+  ) {
     return true
   }
 
@@ -17,7 +21,9 @@ export function isBackgroundPage(): boolean {
     const scripts = browser.runtime.getManifest().background.scripts as string[]
     return scripts.some((script: string) => {
       const url = new URL(browser.runtime.getURL(script))
-      return currentUrl.pathname === url.pathname && currentUrl.origin === url.origin
+      return (
+        currentUrl.pathname === url.pathname && currentUrl.origin === url.origin
+      )
     })
   } catch {
     return false

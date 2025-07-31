@@ -1,10 +1,7 @@
 import type { Runtime } from 'webextension-polyfill'
-import type { StreamProtocol } from './index'
 import * as browser from 'webextension-polyfill'
-import { asType } from './util'
-
-/* #__NO_SIDE_EFFECTS__ */
-const noop = (() => { }) as (...args: any[]) => void
+import type { StreamProtocol } from './index'
+import { asType, noop } from './util'
 
 type StreamKey = keyof StreamProtocol
 type StreamData<Key extends StreamKey> = StreamProtocol[Key][0]
@@ -20,7 +17,7 @@ interface Stream<SendData = unknown, MsgData = unknown> {
   port: Runtime.Port
   /**
    * signal for aborting the stream
-   * 
+   *
    * @example
    * ```ts
    * onOpenStreamChannel('example', stream => {
@@ -56,7 +53,7 @@ interface Stream<SendData = unknown, MsgData = unknown> {
    * async iterator for messages from another end
    *
    * @param [msg] initial message to send
-   * 
+   *
    * @example
    * ```ts
    * for await (const msg of stream.iter(data)) {
@@ -71,7 +68,7 @@ interface Stream<SendData = unknown, MsgData = unknown> {
 }
 
 type StreamCallback<SendData, MsgData> = (
-  stream: Stream<SendData, MsgData>
+  stream: Stream<SendData, MsgData>,
 ) => void
 
 const listeners = new Map<string, StreamCallback<any, any>>()
@@ -80,7 +77,7 @@ const listeners = new Map<string, StreamCallback<any, any>>()
  * @private
  */
 function createStream<T = unknown, K = unknown>(
-  port: Runtime.Port
+  port: Runtime.Port,
 ): Stream<T, K> {
   let connected = true
   const abortController = new AbortController()
@@ -92,7 +89,8 @@ function createStream<T = unknown, K = unknown>(
 
   function onClose(callback: (port: Runtime.Port) => void) {
     port.onDisconnect.addListener(callback)
-    return () => browser.runtime.id && port.onDisconnect.removeListener(callback)
+    return () =>
+      browser.runtime.id && port.onDisconnect.removeListener(callback)
   }
 
   function onMessage(callback: (message: K, port: Runtime.Port) => void) {
@@ -147,20 +145,39 @@ function createStream<T = unknown, K = unknown>(
  * })
  * ```
  */
-export function onOpenStream<T extends StreamKey>(
+function onOpenStreamImpl<T extends StreamKey>(
   channel: T,
-  callback: StreamCallback<StreamReturn<T>, StreamData<T>>
+  callback: StreamCallback<StreamReturn<T>, StreamData<T>>,
 ): () => void {
   const listener = listeners.get(channel)
 
   if (listener) throw new Error(`Channel "${channel}" already has a listener.`)
   listeners.set(channel, callback)
-  return () => { listeners.delete(channel) }
+  return () => {
+    listeners.delete(channel)
+  }
+}
+
+export const onOpenStream = /* #__PURE__ */ new Proxy(
+  /* #__PURE__ */ Object.create(null),
+  {
+    get(target, p: StreamKey, receiver) {
+      if (typeof p !== 'string') {
+        return undefined
+      }
+
+      return onOpenStreamImpl.bind(null, p)
+    },
+  },
+) as {
+  [Key in keyof StreamProtocol]: (
+    callback: StreamCallback<StreamReturn<Key>, StreamData<Key>>,
+  ) => () => void
 }
 
 /**
  * Open a stream channel for sending and receiving messages
- * 
+ *
  * @example
  * ```ts
  * const stream = openStream('example')
@@ -177,11 +194,26 @@ export function onOpenStream<T extends StreamKey>(
  * }
  * ```
  */
-export function openStream<
-  T extends StreamKey
->(channel: T): Stream<StreamData<T>, StreamReturn<T>> {
+function openStreamImpl<T extends StreamKey>(
+  channel: T,
+): Stream<StreamData<T>, StreamReturn<T>> {
   const port = browser.runtime.connect({ name: channel })
   return createStream<StreamData<T>, StreamReturn<T>>(port)
+}
+
+export const openStream = /* #__PURE__ */ new Proxy(Object.create(null), {
+  get(target, p: StreamKey, receiver) {
+    if (typeof p !== 'string') {
+      return undefined
+    }
+
+    return openStreamImpl(p)
+  },
+}) as {
+  [Key in keyof StreamProtocol]: () => Stream<
+    StreamData<Key>,
+    StreamReturn<Key>
+  >
 }
 
 /**
@@ -199,6 +231,5 @@ export function webextHandleStream(port: Runtime.Port): void {
   listener(createStream(port))
 }
 
-// side effects
+// FIXME: side effects
 browser.runtime.onConnect.addListener(webextHandleStream)
-

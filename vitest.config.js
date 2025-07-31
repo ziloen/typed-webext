@@ -5,7 +5,7 @@ export default defineConfig({
     typecheck: {
       enabled: true,
       include: [...configDefaults.include],
-      tsconfig: "./tsconfig.json"
-    }
-  }
+      tsconfig: './tsconfig.json',
+    },
+  },
 })
