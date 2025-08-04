@@ -1,5 +1,7 @@
-import { Subject } from 'rxjs'
+import type { Observable } from 'rxjs'
+import { fromEventPattern, share, Subject } from 'rxjs'
 import Browser from 'webextension-polyfill'
+import type { StorageLocalChange } from './storage'
 
 interface CacheObj {
   /**
@@ -15,54 +17,34 @@ interface CacheObj {
 class StorageCache {
   #cache = new Map<string, CacheObj>()
   #fetchingKeys = new Set<string>()
-  #update$ = new Subject<string[]>()
+  update$ = new Subject<Set<string>>()
 
-  getData(keys: string[]): Record<string, CacheObj> | null {
-    const cacheObj: Record<string, CacheObj> = {}
+  getData(keys: Set<string>): Map<string, CacheObj> | null {
+    const data = new Map<string, CacheObj>()
 
-    const missingKeys = []
+    const missingKeys = new Set<string>()
 
     for (const key of keys) {
       const cache = this.#cache.get(key)
       if (!cache) {
-        missingKeys.push(key)
+        missingKeys.add(key)
       } else {
-        cacheObj[key] = cache
+        data.set(key, cache)
       }
     }
 
     // 有缺失的数据
-    if (missingKeys.length) {
+    if (missingKeys.size) {
       this.#fetchStorage(missingKeys)
       return null
     }
 
-    return cacheObj
+    return data
   }
 
-  watch(
-    keys: string[],
-    updateCallback: (data: Record<string, CacheObj>) => void,
-  ) {
-    const subscription = this.#update$.subscribe((updateKeys) => {
-      const needUpdate = hasIntersection(updateKeys, keys)
-
-      if (needUpdate) {
-        const newData = this.getData(keys)
-        if (newData) {
-          updateCallback(newData)
-        }
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }
-
-  #fetchStorage(keys: string[]) {
-    const missingKeys = keys.filter((key) => !this.#fetchingKeys.has(key))
-    if (!missingKeys.length) {
+  #fetchStorage(keys: Set<string>) {
+    const missingKeys = keys.difference(this.#fetchingKeys)
+    if (!missingKeys.size) {
       return
     }
 
@@ -70,7 +52,7 @@ class StorageCache {
       this.#fetchingKeys.add(key)
     }
 
-    Browser.storage.local.get(missingKeys).then((data) => {
+    Browser.storage.local.get([...missingKeys]).then((data) => {
       for (const key of missingKeys) {
         this.#fetchingKeys.delete(key)
         this.#cache.set(key, {
@@ -79,30 +61,26 @@ class StorageCache {
         })
       }
 
-      this.#update$.next(missingKeys)
+      this.update$.next(missingKeys)
     })
   }
 
   constructor() {
     Browser.storage.local.onChanged.addListener((changes) => {
-      const keys = Object.keys(changes)
-
       for (const [key, change] of Object.entries(changes)) {
-        if (this.#cache.has(key)) {
-          this.#cache.set(key, {
-            data: change!.newValue,
-            exists: Object.hasOwn(change!, 'newValue'),
-          })
+        if (!this.#cache.has(key)) {
+          continue
         }
+
+        this.#cache.set(key, {
+          data: structuredClone(change.newValue),
+          exists: Object.hasOwn(change, 'newValue'),
+        })
       }
 
-      this.#update$.next(keys)
+      this.update$.next(new Set(Object.keys(changes)))
     })
   }
-}
-
-function hasIntersection<T>(a: T[], b: T[]) {
-  return a.some((v) => b.includes(v))
 }
 
 function buildState(
@@ -126,3 +104,14 @@ function buildState(
 
   return state
 }
+
+/**
+ * Shared observable for storage.local changes
+ */
+export const storageLocalChanged$: Observable<StorageLocalChange> =
+  /* #__PURE__ */ fromEventPattern(
+    (handler) => Browser.storage.onChanged.addListener(handler),
+    (handler) =>
+      Browser.runtime.id && Browser.storage.onChanged.removeListener(handler),
+    (changes: StorageLocalChange) => changes,
+  ).pipe(/* #__PURE__ */ share({ resetOnRefCountZero: true }))

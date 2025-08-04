@@ -4,7 +4,9 @@ export default defineConfig({
   entry: ['src/index.ts'],
   outDir: 'dist',
   // minify: true,
-  dts: true,
+  dts: {
+    oxc: true,
+  },
   format: ['esm'],
   platform: 'node',
   treeshake: true,

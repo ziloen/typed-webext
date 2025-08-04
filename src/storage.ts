@@ -1,5 +1,3 @@
-import type { Observable } from 'rxjs'
-import { fromEventPattern, share } from 'rxjs'
 import * as browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 
@@ -170,10 +168,10 @@ export async function setStorageLocal(
   }
 }
 
-type StorageLocalChange =
+export type StorageLocalChange =
   // StorageLocalProtocol keys
   {
-    [K in Key]?: {
+    [K in keyof StorageLocalProtocol]?: {
       readonly oldValue?: StorageValue<K>
       readonly newValue?: StorageValue<K>
     }
@@ -192,14 +190,3 @@ export function onStorageLocalChanged(
 
   return () => browser.storage.local.onChanged.removeListener(callback)
 }
-
-/**
- * Shared observable for storage.local changes
- */
-export const storageLocalChanged$: Observable<StorageLocalChange> =
-  /* #__PURE__ */ fromEventPattern(
-    (handler) => browser.storage.onChanged.addListener(handler),
-    (handler) =>
-      browser.runtime.id && browser.storage.onChanged.removeListener(handler),
-    (changes: StorageLocalChange) => changes,
-  ).pipe(/* #__PURE__ */ share({ resetOnRefCountZero: true }))
