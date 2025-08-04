@@ -67,10 +67,14 @@ class StorageCache {
 
   constructor() {
     Browser.storage.local.onChanged.addListener((changes) => {
-      for (const [key, change] of Object.entries(changes)) {
+      const keys = new Set(Object.keys(changes))
+
+      for (const key of keys) {
         if (!this.#cache.has(key)) {
           continue
         }
+
+        const change = changes[key]!
 
         this.#cache.set(key, {
           data: structuredClone(change.newValue),
@@ -78,7 +82,7 @@ class StorageCache {
         })
       }
 
-      this.update$.next(new Set(Object.keys(changes)))
+      this.update$.next(keys)
     })
   }
 }
