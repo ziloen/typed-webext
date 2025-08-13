@@ -19,6 +19,10 @@ class StorageCache {
   #fetchingKeys = new Set<string>()
   update$ = new Subject<Set<string>>()
 
+  /**
+   * - All data exists: returns a Map of key to CacheObj
+   * - Some data missing: returns null, and fetches the missing data from storage.local
+   */
   getData(keys: Set<string>): Map<string, CacheObj> | null {
     const data = new Map<string, CacheObj>()
 
@@ -77,6 +81,8 @@ class StorageCache {
         const change = changes[key]!
 
         this.#cache.set(key, {
+          // In Chrome, different listeners receive the same `changes` object
+          // Prevent modifying the original object
           data: structuredClone(change.newValue),
           exists: Object.hasOwn(change, 'newValue'),
         })
@@ -88,25 +94,27 @@ class StorageCache {
 }
 
 function buildState(
-  newState: Record<string, CacheObj>,
-  defaultState: string[] | Record<string, unknown>,
+  oldState: Record<string, unknown> | null,
+  newData: Map<string, CacheObj>,
+  keys: string[] | Record<string, unknown>,
 ) {
-  if (Array.isArray(defaultState)) {
-    const state: Record<string, unknown> = {}
-    for (const key of defaultState) {
-      if (newState[key]?.exists) {
-        state[key] = newState[key].data
+  const newState: Record<string, unknown> = { ...oldState }
+  const isArray = Array.isArray(keys)
+
+  for (const [key, cacheObj] of newData) {
+    if (cacheObj.exists) {
+      newState[key] = structuredClone(cacheObj.data)
+    } else {
+      if (isArray) {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete newState[key]
+      } else {
+        newState[key] = keys[key]
       }
     }
-    return state
   }
 
-  const state: Record<string, unknown> = {}
-  for (const key in defaultState) {
-    state[key] = newState[key]?.exists ? newState[key].data : defaultState[key]
-  }
-
-  return state
+  return newState
 }
 
 /**
