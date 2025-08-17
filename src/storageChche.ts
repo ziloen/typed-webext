@@ -83,6 +83,7 @@ class StorageCache {
         this.#cache.set(key, {
           // In Chrome, different listeners receive the same `changes` object
           // Prevent modifying the original object
+          // In Firefox, the data may not be JSON-serializable, so we use `structuredClone()` instead of `JSON.parse(JSON.stringify())`.
           data: structuredClone(change.newValue),
           exists: Object.hasOwn(change, 'newValue'),
         })
