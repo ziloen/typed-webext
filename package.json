@@ -35,15 +35,15 @@
   ],
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
-    "@ziloen/eslint-config": "^0.1.68",
-    "bumpp": "^10.2.2",
-    "eslint": "^9.32.0",
+    "@ziloen/eslint-config": "^0.1.70",
+    "bumpp": "^10.2.3",
+    "eslint": "^9.33.0",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.2.0",
     "ts-lib-enhance": "^1.0.21",
-    "tsdown": "^0.13.2",
+    "tsdown": "^0.14.1",
     "type-fest": "^4.41.0",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {

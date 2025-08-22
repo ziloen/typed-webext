@@ -373,32 +373,27 @@ export function webextHandleMessage(
     }
   }
 
-  // Run the listener
   const listener = listenersMap.get(id)
   if (!listener) {
     return
   }
 
-  ;(async () => {
-    try {
-      sendResponse?.({
-        data: await listener({
-          id,
-          data: message.data,
-          sender,
-          originalSender: message.sender,
-        }),
-      })
-    } catch (error) {
-      sendResponse?.({
-        error: serializeError(
-          error instanceof Error
-            ? error
-            : new Error('Unknown error', { cause: error }),
-        ),
-      })
-    }
-  })()
+  // Run the listener
+  Promise.try(listener, {
+    id,
+    data: message.data,
+    sender,
+    originalSender: message.sender,
+  })
+    .then((data) => ({ data }))
+    .catch((error: unknown) => ({
+      error: serializeError(
+        error instanceof Error
+          ? error
+          : new Error('Unknown error', { cause: error }),
+      ),
+    }))
+    .then(sendResponse)
 
   return true
 }
