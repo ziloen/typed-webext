@@ -11,6 +11,7 @@ import {
   isContentScriptPage,
   isSidepanelPageSync,
   isTabsApiAvailable,
+  noop,
 } from './util'
 
 const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
@@ -68,120 +69,98 @@ interface SendMessageOptions {
    */
   destination?:
     | 'content-script'
-    | 'sidebar' /* | "background" | "popup" | "options" | "devtools" */
+    | 'sidebar' /* | "background" | "popup" | "options" | "devtools" | "offscreen" */
 }
 
-function createSendMessage<Key extends keyof MessageProtocol>(id: Key) {
-  return async function sendMessage<Data extends MsgData<NoInfer<Key>>>(
-    ...[data, options = {}]: SendParams<Data>
-  ) {
-    if (!browser.runtime.id) {
-      throw new Error('Extension context is not available.')
-    }
+async function sendMessageImpl<
+  Key extends keyof MessageProtocol,
+  Data extends MsgData<NoInfer<Key>>,
+>(id: Key, ...[data, options = {}]: SendParams<Data>) {
+  if (!browser.runtime.id) {
+    throw new Error('Extension context is not available.')
+  }
 
-    const tabId = options.tabId
-    const frameId = options.frameId
-    const destination = options.destination
+  const tabId = options.tabId
+  const frameId = options.frameId
+  const destination = options.destination
 
-    type Res =
-      | { data: MsgReturn<Key, Data> }
-      | { error: ErrorObject }
-      | null
-      | undefined
+  type Res =
+    | { data: MsgReturn<Key, Data> }
+    | { error: ErrorObject }
+    | null
+    | undefined
 
-    let res: Res
+  let res: Res
 
-    if (destination === 'content-script' && isContentScript) {
-      res = await browser.runtime.sendMessage({
-        [MessageIdentifierKey]: 1,
-        id: BackgroundForwardMessageId,
-        data: {
-          tabId,
-          frameId,
-          id,
-          data,
-          destination,
-        },
-      })
-    }
-    // No tabId, send directly to background
-    else if (tabId === undefined) {
-      res = await browser.runtime.sendMessage({
+  if (destination === 'content-script' && isContentScript) {
+    res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
+      id: BackgroundForwardMessageId,
+      data: {
+        tabId,
+        frameId,
+        id,
+        data,
+        destination,
+      },
+    })
+  }
+  // No tabId, send directly to background
+  else if (tabId === undefined) {
+    res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
+      id,
+      data,
+      destination,
+    })
+  }
+  // Send to tab and tabs API is available
+  else if (tabId !== 'sender' && frameId !== 'sender' && isTabsApiAvailable()) {
+    res = await browser.tabs.sendMessage(
+      tabId === 'active' ? await getActiveTabId() : tabId,
+      {
         [MessageIdentifierKey]: 1,
         id,
         data,
         destination,
-      })
-    }
-    // Send to tab and tabs API is available
-    else if (
-      tabId !== 'sender' &&
-      frameId !== 'sender' &&
-      isTabsApiAvailable()
-    ) {
-      res = await browser.tabs.sendMessage(
-        tabId === 'active' ? await getActiveTabId() : tabId,
-        {
-          [MessageIdentifierKey]: 1,
-          id,
-          data,
-          destination,
-        },
-        frameId === undefined ? undefined : { frameId },
-      )
-    }
-    // Send to tab and tabs API is not available, forward by background
-    else {
-      res = await browser.runtime.sendMessage({
-        [MessageIdentifierKey]: 1,
-        id: BackgroundForwardMessageId,
-        data: {
-          tabId,
-          frameId,
-          id,
-          data,
-          destination,
-        },
-      })
-    }
-
-    // when null, message is already handled by other listeners
-    if (res === null) {
-      throw new Error(
-        `null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners for message "${id}".`,
-      )
-    }
-
-    // when undefined, no listener for the message, or the listener returns undefined
-    if (res === undefined) {
-      throw new Error(
-        `undefined from runtime.sendMessage. No listener for message "${id}". or the listener returns undefined.`,
-      )
-    }
-
-    if (Object.hasOwn(res, 'error')) {
-      throw deserializeError(res.error)
-    }
-
-    return res.data
+      },
+      frameId === undefined ? undefined : { frameId },
+    )
   }
-}
+  // Send to tab and tabs API is not available, forward by background
+  else {
+    res = await browser.runtime.sendMessage({
+      [MessageIdentifierKey]: 1,
+      id: BackgroundForwardMessageId,
+      data: {
+        tabId,
+        frameId,
+        id,
+        data,
+        destination,
+      },
+    })
+  }
 
-export const sendMessage = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: MsgKey, receiver) {
-      if (typeof p !== 'string') {
-        return undefined
-      }
+  // when null, message is already handled by other listeners
+  if (res === null) {
+    throw new Error(
+      `null from runtime.sendMessage. Maybe multiple async runtime.onMessage listeners for message "${id}".`,
+    )
+  }
 
-      return createSendMessage(p)
-    },
-  },
-) as {
-  [Key in keyof MessageProtocol]: (
-    ...args: SendParams<MsgData<Key>>
-  ) => Promise<MsgReturn<Key>>
+  // when undefined, no listener for the message, or the listener returns undefined
+  if (res === undefined) {
+    throw new Error(
+      `undefined from runtime.sendMessage. No listener for message "${id}". or the listener returns undefined.`,
+    )
+  }
+
+  if (Object.hasOwn(res, 'error')) {
+    throw deserializeError(res.error)
+  }
+
+  return res.data
 }
 
 const listenersMap = new Map<string, MsgCallback>()
@@ -242,7 +221,7 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
   const signal = options.signal
 
   if (signal?.aborted) {
-    return () => {}
+    return noop
   }
 
   if (passive) {
@@ -280,35 +259,79 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
   }
 }
 
-export const onMessage = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: MsgKey, receiver) {
-      if (typeof p !== 'string') {
-        return undefined
-      }
-
-      return onMessageImpl.bind(null, p)
-    },
-  },
-) as {
-  [Key in keyof MessageProtocol]: {
-    (
-      callback: PassiveCallback<ReadonlyDeep<MsgData<Key>>>,
-      options: OnMessageOptions<true>,
-    ): () => void
-    (
-      callback: MsgCallback<MsgData<Key>, MsgReturn<Key>>,
-      options?: OnMessageOptions<boolean>,
-    ): () => void
-  }
-}
-
 const isBackground = /* #__PURE__ */ isBackgroundPage()
 
 const isSidepanel = /* #__PURE__ */ isSidepanelPageSync()
 
 const isContentScript = /* #__PURE__ */ isContentScriptPage()
+
+function handleForwardMessage(
+  message: {
+    id?: string
+    data?: unknown
+    [MessageIdentifierKey]?: 1
+  },
+  sender: Runtime.MessageSender,
+) {
+  if (message[MessageIdentifierKey] !== 1) return
+  if (message.id !== BackgroundForwardMessageId) return
+
+  return new Promise(async (resolve, reject) => {
+    const { tabId, frameId, id, data, destination } = message.data as {
+      tabId: number | 'sender' | 'active' | undefined
+      frameId: number | undefined | 'sender'
+      id: string
+      data: unknown
+      destination?: 'sidebar' | 'content-script'
+    }
+
+    let targetTabId: number | undefined
+    try {
+      targetTabId =
+        tabId === 'sender'
+          ? sender.tab!.id!
+          : tabId === 'active'
+            ? await getActiveTabId()
+            : tabId
+    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+      return reject(error)
+    }
+
+    const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
+
+    if (destination === 'content-script' && targetTabId === undefined) {
+      resolve(
+        browser.runtime.sendMessage({
+          [MessageIdentifierKey]: 1,
+          id,
+          data,
+          sender,
+          destination,
+        }),
+      )
+
+      return
+    }
+
+    resolve(
+      browser.tabs.sendMessage(
+        targetTabId!,
+        {
+          id,
+          data,
+          sender,
+          destination,
+          [MessageIdentifierKey]: 1,
+        },
+        targetFrameId === undefined ? undefined : { frameId: targetFrameId },
+      ),
+    )
+  })
+}
+
+// FIXME: side effects
+browser.runtime.onMessage.addListener(webextHandleMessage)
 
 /**
  * Handle message from runtime.onMessage
@@ -398,70 +421,45 @@ export function webextHandleMessage(
   return true
 }
 
-function handleForwardMessage(
-  message: {
-    id?: string
-    data?: unknown
-    [MessageIdentifierKey]?: 1
+export const onMessage = /* #__PURE__ */ new Proxy(
+  /* #__PURE__ */ Object.create(null),
+  {
+    get(target, p: MsgKey) {
+      if (typeof p !== 'string') return
+
+      return onMessageImpl.bind(null, p)
+    },
+    set() {
+      throw new Error('onMessage is read-only')
+    },
   },
-  sender: Runtime.MessageSender,
-) {
-  if (message[MessageIdentifierKey] !== 1) return
-  if (message.id !== BackgroundForwardMessageId) return
-
-  return new Promise(async (resolve, reject) => {
-    const { tabId, frameId, id, data, destination } = message.data as {
-      tabId: number | 'sender' | 'active' | undefined
-      frameId: number | undefined | 'sender'
-      id: string
-      data: unknown
-      destination?: 'sidebar' | 'content-script'
-    }
-
-    let targetTabId: number | undefined
-    try {
-      targetTabId =
-        tabId === 'sender'
-          ? sender.tab!.id!
-          : tabId === 'active'
-            ? await getActiveTabId()
-            : tabId
-    } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-      return reject(error)
-    }
-
-    const targetFrameId = frameId === 'sender' ? sender.frameId : frameId
-
-    if (destination === 'content-script' && targetTabId === undefined) {
-      resolve(
-        browser.runtime.sendMessage({
-          [MessageIdentifierKey]: 1,
-          id,
-          data,
-          sender,
-          destination,
-        }),
-      )
-
-      return
-    }
-
-    resolve(
-      browser.tabs.sendMessage(
-        targetTabId!,
-        {
-          id,
-          data,
-          sender,
-          destination,
-          [MessageIdentifierKey]: 1,
-        },
-        targetFrameId === undefined ? undefined : { frameId: targetFrameId },
-      ),
-    )
-  })
+) as {
+  readonly [Key in keyof MessageProtocol]: {
+    (
+      callback: PassiveCallback<ReadonlyDeep<MsgData<Key>>>,
+      options: OnMessageOptions<true>,
+    ): () => void
+    (
+      callback: MsgCallback<MsgData<Key>, MsgReturn<Key>>,
+      options?: OnMessageOptions<boolean>,
+    ): () => void
+  }
 }
 
-// FIXME: side effects
-browser.runtime.onMessage.addListener(webextHandleMessage)
+export const sendMessage = /* #__PURE__ */ new Proxy(
+  /* #__PURE__ */ Object.create(null),
+  {
+    get(target, p: MsgKey) {
+      if (typeof p !== 'string') return undefined
+
+      return sendMessageImpl.bind(null, p)
+    },
+    set() {
+      throw new Error('sendMessage is read-only')
+    },
+  },
+) as {
+  readonly [Key in keyof MessageProtocol]: (
+    ...args: SendParams<MsgData<Key>>
+  ) => Promise<MsgReturn<Key>>
+}
