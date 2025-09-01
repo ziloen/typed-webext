@@ -16,7 +16,7 @@ type ValueWithDefault<Value, Default> =
     ? Value
     : Value | MakeArrayWritable<Default>
 
-type ObjectDefaults<Defaults> = {
+export type ObjectDefaults<Defaults> = {
   -readonly [K in keyof Defaults]: K extends keyof StorageLocalProtocol
     ? ValueWithDefault<StorageLocalProtocol[K], Defaults[K]>
     : Defaults[K]

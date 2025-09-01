@@ -1,7 +1,87 @@
+import { useEffect, useRef, useState } from 'react'
 import type { Observable } from 'rxjs'
 import { fromEventPattern, share, Subject } from 'rxjs'
 import Browser from 'webextension-polyfill'
-import type { StorageLocalChange } from './storage'
+import type { StorageLocalProtocol } from './index'
+import type { ObjectDefaults, StorageLocalChange } from './storage'
+import { noop } from './util'
+
+export function useStorageLocal<K extends keyof StorageLocalProtocol>(
+  keys: readonly K[],
+): [
+  state: {
+    [Key in keyof Pick<StorageLocalProtocol, keyof StorageLocalProtocol & K>]?:
+      | StorageLocalProtocol[Key]
+      | undefined
+  },
+  loading: boolean,
+]
+
+export function useStorageLocal<const O extends Record<string, any>>(
+  defaults:
+    | O
+    | ({
+        [Key in keyof StorageLocalProtocol]:
+          | StorageLocalProtocol[Key]
+          | NoInfer<O>[Key]
+      } & Record<string, any>),
+): [state: ObjectDefaults<O>, loading: boolean]
+export function useStorageLocal(keys: string[] | Record<string, any>) {
+  const cleanupRef = useRef<() => void>(noop)
+  const keysLatest = useRef(keys)
+  keysLatest.current = keys
+
+  const [result, setResult] = useState<
+    [state: Record<string, unknown>, loading: boolean]
+  >(() => {
+    const isArray = Array.isArray(keys)
+    const storageKyes = new Set(isArray ? keys : Object.keys(keys))
+
+    // 保存当前结果，用于更新 state
+    let currentState: Record<string, unknown> | null = null
+
+    // 监听
+    const subscription = cache.update$.subscribe((updateKeys) => {
+      // 如果更新的 key 包含在监听的 key 中，则更新
+      const intersection = updateKeys.intersection(storageKyes)
+      if (!intersection.size) return
+
+      const newData = cache.getData(
+        currentState === null ? storageKyes : intersection,
+      )
+      if (!newData) return
+
+      setResult([
+        (currentState = buildState(currentState, newData, keysLatest.current)),
+        false,
+      ])
+    })
+
+    cleanupRef.current = () => {
+      subscription.unsubscribe()
+    }
+
+    // 初始化
+    const data = cache.getData(storageKyes)
+
+    if (data) {
+      return [
+        (currentState = buildState(currentState, data, keysLatest.current)),
+        false,
+      ]
+    } else {
+      return [isArray ? {} : keys, true]
+    }
+  })
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current()
+    }
+  }, [])
+
+  return result
+}
 
 interface CacheObj {
   /**
@@ -93,6 +173,8 @@ class StorageCache {
     })
   }
 }
+
+const cache = /* #__PURE__ */ new StorageCache()
 
 function buildState(
   oldState: Record<string, unknown> | null,
