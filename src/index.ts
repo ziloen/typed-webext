@@ -1,3 +1,4 @@
+export { listenExtensionEvent } from './listenExtensionEvent'
 export { onMessage, sendMessage, webextHandleMessage } from './message'
 export {
   getStorageLocal,
