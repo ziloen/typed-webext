@@ -45,9 +45,10 @@ export function isSidepanelPage(): Promise<boolean> | boolean {
   })
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 export function isSidepanelPageSync(): boolean {
   try {
-    const manifest = /* #__PURE__ */ browser.runtime.getManifest()
+    const manifest = browser.runtime.getManifest()
     // @ts-expect-error side_panel is not in the manifest type
     const sidepanelPath = manifest.side_panel.default_path as string
     const sidepanelUrl = new URL(browser.runtime.getURL(sidepanelPath))

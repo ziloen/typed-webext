@@ -7,6 +7,7 @@ export default defineConfig({
   dts: {
     oxc: true,
   },
+  // attachDebugInfo: "none",
   format: ['esm'],
   platform: 'node',
   treeshake: true,

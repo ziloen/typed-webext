@@ -108,10 +108,10 @@ export async function getStorageLocal(
   key: string | string[] | Record<string, unknown>,
   defaultValue?: unknown,
 ) {
-  const result = await /* #__PURE__ */ browser.storage.local.get(key)
+  const result = await browser.storage.local.get(key)
   if (typeof key === 'string') {
     // If key exists in storage.local
-    if (/* #__PURE__ */ Object.hasOwn(result, key)) {
+    if (Object.hasOwn(result, key)) {
       return result[key]
     }
 

@@ -43,7 +43,7 @@
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
     "@types/react": "^19.1.12",
-    "@ziloen/eslint-config": "^0.1.70",
+    "@ziloen/eslint-config": "^0.1.71",
     "bumpp": "^10.2.3",
     "eslint": "^9.34.0",
     "prettier": "^3.6.2",

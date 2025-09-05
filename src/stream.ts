@@ -201,15 +201,18 @@ function openStreamImpl<T extends StreamKey>(
   return createStream<StreamData<T>, StreamReturn<T>>(port)
 }
 
-export const openStream = /* #__PURE__ */ new Proxy(Object.create(null), {
-  get(target, p: StreamKey, receiver) {
-    if (typeof p !== 'string') {
-      return undefined
-    }
+export const openStream = /* #__PURE__ */ new Proxy(
+  /* #__PURE__ */ Object.create(null),
+  {
+    get(target, p: StreamKey, receiver) {
+      if (typeof p !== 'string') {
+        return undefined
+      }
 
-    return openStreamImpl(p)
+      return openStreamImpl(p)
+    },
   },
-}) as {
+) as {
   [Key in keyof StreamProtocol]: () => Stream<
     StreamData<Key>,
     StreamReturn<Key>
