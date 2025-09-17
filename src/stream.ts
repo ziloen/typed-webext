@@ -160,15 +160,7 @@ function onOpenStreamImpl<T extends StreamKey>(
 
 export const onOpenStream = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: StreamKey, receiver) {
-      if (typeof p !== 'string') {
-        return undefined
-      }
-
-      return onOpenStreamImpl.bind(null, p)
-    },
-  },
+  { get: (target, p: StreamKey) => onOpenStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: (
     callback: StreamCallback<StreamReturn<Key>, StreamData<Key>>,
@@ -203,15 +195,7 @@ function openStreamImpl<T extends StreamKey>(
 
 export const openStream = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: StreamKey, receiver) {
-      if (typeof p !== 'string') {
-        return undefined
-      }
-
-      return openStreamImpl(p)
-    },
-  },
+  { get: (target, p: StreamKey) => openStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: () => Stream<
     StreamData<Key>,

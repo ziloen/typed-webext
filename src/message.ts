@@ -423,16 +423,7 @@ export function webextHandleMessage(
 
 export const onMessage = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: MsgKey) {
-      if (typeof p !== 'string') return
-
-      return onMessageImpl.bind(null, p)
-    },
-    set() {
-      throw new Error('onMessage is read-only')
-    },
-  },
+  { get: (target, p: MsgKey) => onMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: {
     (
@@ -448,16 +439,7 @@ export const onMessage = /* #__PURE__ */ new Proxy(
 
 export const sendMessage = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  {
-    get(target, p: MsgKey) {
-      if (typeof p !== 'string') return undefined
-
-      return sendMessageImpl.bind(null, p)
-    },
-    set() {
-      throw new Error('sendMessage is read-only')
-    },
-  },
+  { get: (target, p: MsgKey) => sendMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: (
     ...args: SendParams<MsgData<Key>>
