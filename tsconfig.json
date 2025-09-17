@@ -37,6 +37,7 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "resolveJsonModule": true,
+    "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": false,
     /**
