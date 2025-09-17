@@ -1,6 +1,6 @@
 import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
-import type { IfNever, Promisable, ReadonlyDeep } from 'type-fest'
+import type { If, IsNever, Promisable, ReadonlyDeep } from 'type-fest'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from 'webextension-polyfill'
 import type { MessageProtocol } from './index'
@@ -40,12 +40,12 @@ type MsgReturn<
 
 type MsgCallback<Data = MsgData<MsgKey>, Return = MsgReturn<MsgKey>> = (
   message: Message<Data>,
-) => IfNever<Return, void, Promisable<Return>>
+) => If<IsNever<Return>, void, Promisable<Return>>
 
 type PassiveCallback<Data = MsgData<MsgKey>> = (message: Message<Data>) => void
 
-type SendParams<D> = IfNever<
-  D,
+type SendParams<D> = If<
+  IsNever<D>,
   [data?: undefined | null, options?: SendMessageOptions],
   [data: D, options?: SendMessageOptions]
 >
