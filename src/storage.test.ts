@@ -1,18 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import { expectTypeOf, test } from 'vitest'
-import type { getStorageLocal as TgetStorageLocal } from './storage'
+import type { getStorageLocal as getLocalStorageType } from './storage'
+import type { Equal, Expect } from './util'
 
-const getStorageLocal = (() => {}) as unknown as typeof TgetStorageLocal
-
-// type-challenges utils
-/** @internal */
-type Equal<X, Y> =
-  (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
-    ? true
-    : false
-
-/** @internal */
-type Expect<T extends true> = T
+declare const getStorageLocal: typeof getLocalStorageType
 
 test('getStorageLocal type tests', async () => {
   expectTypeOf<
@@ -23,7 +14,7 @@ test('getStorageLocal type tests', async () => {
     ReturnType<
       typeof getStorageLocal<'__test__string_array', string[], string[]>
     >
-  >().toEqualTypeOf<Promise<string[]>>()
+  >().toEqualTypeOf<Promise<string[]>>
 
   expectTypeOf<
     ReturnType<

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
+    "rootDir": "./",
     "module": "ESNext",
     "target": "ESNext",
     /**
@@ -64,7 +64,7 @@
     ],
     "paths": {
       "~/*": [
-        "src/*"
+        "./src/*"
       ],
       "~cwd/*": [
         "./*"

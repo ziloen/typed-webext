@@ -24,6 +24,7 @@ export function isSenderSidepanel(sender: browser.Runtime.MessageSender): void {
 /* #__NO_SIDE_EFFECTS__ */
 export function isPopupPage(): void {}
 
+/* #__NO_SIDE_EFFECTS__ */
 export async function getActiveTabId(): Promise<number> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
 
@@ -35,3 +36,12 @@ export async function getActiveTabId(): Promise<number> {
 
 /* #__NO_SIDE_EFFECTS__ */
 export const noop = (() => {}) as (...args: any[]) => void
+
+/** @internal */
+export type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2
+    ? true
+    : false
+
+/** @internal */
+export type Expect<T extends true> = T
