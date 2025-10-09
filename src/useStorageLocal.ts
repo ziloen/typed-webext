@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Observable } from 'rxjs'
+import type { Observable, Subscription } from 'rxjs'
 import { fromEventPattern, share, Subject } from 'rxjs'
 import Browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 import type { ObjectDefaults, StorageLocalChange } from './storage'
-import { noop } from './util'
 
 export function useStorageLocal<K extends keyof StorageLocalProtocol>(
   keys: readonly K[],
@@ -26,57 +25,54 @@ export function useStorageLocal<const O extends Record<string, any>>(
           | NoInfer<O>[Key]
       } & Record<string, any>),
 ): [state: ObjectDefaults<O>, loading: boolean]
+
 export function useStorageLocal(keys: string[] | Record<string, any>) {
-  const cleanupRef = useRef<() => void>(noop)
+  const sub = useRef<null | Subscription>(null)
   const keysLatest = useRef(keys)
   keysLatest.current = keys
 
-  const [result, setResult] = useState<
-    [state: Record<string, unknown>, loading: boolean]
-  >(() => {
+  function initState(): [state: Record<string, unknown>, loading: boolean] {
     const isArray = Array.isArray(keys)
     const storageKyes = new Set(isArray ? keys : Object.keys(keys))
 
-    // 保存当前结果，用于更新 state
-    let currentState: Record<string, unknown> | null = null
+    // 保存当前结果
+    let state: Record<string, unknown> | null = null
 
     // 监听
-    const subscription = cache.update$.subscribe((updateKeys) => {
+    sub.current = cache.update$.subscribe((updateKeys) => {
       // 如果更新的 key 包含在监听的 key 中，则更新
       const intersection = updateKeys.intersection(storageKyes)
       if (!intersection.size) return
 
-      const newData = cache.getData(
-        currentState === null ? storageKyes : intersection,
-      )
+      const newData = cache.getData(state === null ? storageKyes : intersection)
       if (!newData) return
 
       setResult([
-        (currentState = buildState(currentState, newData, keysLatest.current)),
+        (state = buildState(state, newData, keysLatest.current)),
         false,
       ])
     })
-
-    cleanupRef.current = () => {
-      subscription.unsubscribe()
-    }
 
     // 初始化
     const data = cache.getData(storageKyes)
 
     if (data) {
-      return [
-        (currentState = buildState(currentState, data, keysLatest.current)),
-        false,
-      ]
+      return [(state = buildState(state, data, keysLatest.current)), false]
     } else {
       return [isArray ? {} : keys, true]
     }
-  })
+  }
+
+  const [result, setResult] = useState(initState)
 
   useEffect(() => {
+    if (!sub.current) {
+      setResult(initState())
+    }
+
     return () => {
-      cleanupRef.current()
+      sub.current?.unsubscribe()
+      sub.current = null
     }
   }, [])
 

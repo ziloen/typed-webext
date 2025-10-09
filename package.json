@@ -31,10 +31,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/webextension-polyfill": "^0.12.3",
+    "@types/webextension-polyfill": "^0.12.4",
     "rxjs": "^7.8.2",
     "serialize-error": "<=13",
-    "type-fest": "^5.0.0",
+    "type-fest": "^5.0.1",
     "webextension-polyfill": ">=0.12.0 <=1.0.0"
   },
   "files": [
@@ -42,15 +42,15 @@
   ],
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
-    "@types/react": "^19.1.13",
-    "@ziloen/eslint-config": "^0.1.71",
-    "bumpp": "^10.2.3",
-    "eslint": "^9.35.0",
+    "@types/react": "^19.2.2",
+    "@ziloen/eslint-config": "^0.1.72",
+    "bumpp": "^10.3.1",
+    "eslint": "^9.37.0",
     "prettier": "^3.6.2",
-    "prettier-plugin-organize-imports": "^4.2.0",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "ts-lib-enhance": "^1.0.21",
-    "tsdown": "^0.15.2",
-    "typescript": "^5.9.2",
+    "tsdown": "^0.15.6",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
