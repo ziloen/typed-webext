@@ -441,7 +441,7 @@ export const sendMessage = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
   { get: (target, p: MsgKey) => sendMessageImpl.bind(null, p) },
 ) as {
-  readonly [Key in keyof MessageProtocol]: (
-    ...args: SendParams<MsgData<Key>>
-  ) => Promise<MsgReturn<Key>>
+  readonly [Key in keyof MessageProtocol]: <Data extends MsgData<Key>>(
+    ...args: SendParams<Data>
+  ) => Promise<MsgReturn<Key, Data>>
 }
