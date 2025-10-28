@@ -10,7 +10,7 @@ type StreamReturn<Key extends StreamKey> = StreamProtocol[Key][1]
 /**
  * Stream interface for sending and receiving messages
  */
-interface Stream<SendData = unknown, MsgData = unknown> {
+export interface Stream<SendData = unknown, MsgData = unknown> {
   /**
    * The port connecting the two ends of the stream
    */
@@ -190,7 +190,7 @@ function openStreamImpl<T extends StreamKey>(
   channel: T,
 ): Stream<StreamData<T>, StreamReturn<T>> {
   const port = browser.runtime.connect({ name: channel })
-  return createStream<StreamData<T>, StreamReturn<T>>(port)
+  return createStream(port)
 }
 
 export const openStream = /* #__PURE__ */ new Proxy(

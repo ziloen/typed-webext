@@ -7,9 +7,17 @@ export {
   setStorageLocal,
 } from './storage'
 export { onOpenStream, openStream, webextHandleStream } from './stream'
+export type { Stream } from './stream'
 
 /**
  * Used by `onOpenStream` and `openStream`
+ *
+ * @example
+ * ```ts
+ * interface StreamProtocol {
+ *   chat: [prompt: string, response: string]
+ * }
+ * ```
  */
 export interface StreamProtocol {
   /** @internal */
@@ -18,6 +26,13 @@ export interface StreamProtocol {
 
 /**
  * Used by `onMessage` and `sendMessage`
+ *
+ * @example
+ * ```ts
+ * interface MessageProtocol {
+ *   greet: [name: string, greeting: string]
+ * }
+ * ```
  */
 export interface MessageProtocol<T = unknown> {
   /** @internal */
