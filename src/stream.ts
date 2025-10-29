@@ -20,7 +20,7 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    *
    * @example
    * ```ts
-   * onOpenStreamChannel('example', stream => {
+   * onOpenStream('example', stream => {
    *   stream.onMessage(msg => {
    *     someApi(msg, { signal: stream.signal })
    *       .then((data) => stream.send({ data }))
@@ -36,19 +36,19 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
   /**
    * send data to another end
    */
-  send(msg: SendData): void
+  send: (msg: SendData) => void
   /**
    * close the stream
    */
-  close(): void
+  close: () => void
   /**
    * listen to message from another end
    */
-  onMessage(callback: (msg: MsgData) => void): () => void
+  onMessage: (callback: (msg: MsgData) => void) => () => void
   /**
    * listen to close event
    */
-  onClose(callback: () => void): () => void
+  onClose: (callback: () => void) => () => void
   /**
    * async iterator for messages from another end
    *
@@ -61,7 +61,7 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    * }
    * ```
    */
-  iter(msg?: SendData): AsyncIterable<MsgData>
+  iter: (msg?: SendData) => AsyncIterable<MsgData>
 
   // [Symbol.dispose]
   // [Symbol.observable]
@@ -103,8 +103,12 @@ function createStream<T = unknown, K = unknown>(
     port,
     signal: abortController.signal,
     // avoid sending message after disconnect
-    send: (msg) => connected && port.postMessage(msg),
-    close: () => {
+    send(msg) {
+      if (connected) {
+        port.postMessage(msg)
+      }
+    },
+    close() {
       if (!connected) return
       connected = false
       port.disconnect()
