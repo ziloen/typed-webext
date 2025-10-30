@@ -20,14 +20,15 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    *
    * @example
    * ```ts
-   * onOpenStream('example', stream => {
-   *   stream.onMessage(msg => {
-   *     someApi(msg, { signal: stream.signal })
-   *       .then((data) => stream.send({ data }))
+   * onOpenStream.example(({ signal, send, onMessage, close }) => {
+   *   onMessage((msg) => {
+   *     someApi(msg, { signal })
+   *       .then((data) => send({ data }))
    *       .catch((e: Error) => {
    *         if (e.name === "AbortError") return
-   *         stream.send({ error: serializeError(e) })
+   *         send({ error: serializeError(e) })
    *       })
+   *       .finally(close)
    *   })
    * })
    * ```
@@ -102,16 +103,17 @@ function createStream<T = unknown, K = unknown>(
   return {
     port,
     signal: abortController.signal,
-    // avoid sending message after disconnect
     send(msg) {
+      // avoid sending message after disconnect
       if (connected) {
         port.postMessage(msg)
       }
     },
     close() {
-      if (!connected) return
-      connected = false
-      port.disconnect()
+      if (connected) {
+        connected = false
+        port.disconnect()
+      }
     },
     onMessage,
     onClose,
@@ -164,7 +166,7 @@ function onOpenStreamImpl<T extends StreamKey>(
 
 export const onOpenStream = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  { get: (target, p: StreamKey) => onOpenStreamImpl.bind(null, p) },
+  { get: (_, p: StreamKey) => onOpenStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: (
     callback: StreamCallback<StreamReturn<Key>, StreamData<Key>>,
@@ -199,7 +201,7 @@ function openStreamImpl<T extends StreamKey>(
 
 export const openStream = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  { get: (target, p: StreamKey) => openStreamImpl.bind(null, p) },
+  { get: (_, p: StreamKey) => openStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: () => Stream<
     StreamData<Key>,
