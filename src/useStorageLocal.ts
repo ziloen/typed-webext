@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Observable, Subscription } from 'rxjs'
 import { fromEventPattern, share, Subject } from 'rxjs'
 import Browser from 'webextension-polyfill'
@@ -65,7 +65,7 @@ export function useStorageLocal(keys: string[] | Record<string, any>) {
 
   const [result, setResult] = useState(initState)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!sub.current) {
       setResult(initState())
     }

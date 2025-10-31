@@ -18,7 +18,7 @@ const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
 
 const MessageIdentifierKey = '__webext_message_identifier__'
 
-interface Message<Data> {
+type Message<Data, Return, Manual extends boolean> = {
   id: string
   /**
    * The sender of the message
@@ -29,6 +29,13 @@ interface Message<Data> {
    * The original sender of the message if it is forwarded by background
    */
   originalSender?: Runtime.MessageSender | undefined
+
+  /**
+   * Function to send a response. Only available if Manual is true.
+   */
+  sendResponse: Manual extends true
+    ? (response: Promisable<Return>) => void
+    : undefined
 }
 
 type MsgKey = keyof MessageProtocol
@@ -38,11 +45,13 @@ type MsgReturn<
   Data = unknown,
 > = MessageProtocol<Data>[Key][1]
 
-type MsgCallback<Data = MsgData<MsgKey>, Return = MsgReturn<MsgKey>> = (
-  message: Message<Data>,
-) => If<IsNever<Return>, void, Promisable<Return>>
-
-type PassiveCallback<Data = MsgData<MsgKey>> = (message: Message<Data>) => void
+type MsgCallback<
+  Manual extends boolean = false,
+  Data = MsgData<MsgKey>,
+  Return = MsgReturn<MsgKey>,
+> = (
+  message: Message<Data, Return, Manual>,
+) => Manual extends true ? any : If<IsNever<Return>, void, Promisable<Return>>
 
 type SendParams<D> = If<
   IsNever<D>,
@@ -164,34 +173,34 @@ async function sendMessageImpl<
 }
 
 const listenersMap = new Map<string, MsgCallback>()
-const pasiveListenersMap = new Map<string, Set<PassiveCallback>>()
+const manualListenersMap = new Map<string, Set<MsgCallback<true>>>()
 
 type OnMessageOptions<P extends boolean> = {
-  passive?: P
+  manual?: P
   signal?: AbortSignal
   // TODO:
   // once?: boolean
 }
 
 /**
- * Add a passive listener to the message channel.
+ * Add a manual listener to the message channel.
  *
- * Passive listeners return value is ignored.
+ * Manual listeners return value is ignored.
  *
- * You can add multiple passive listeners to the same channel.
+ * You can add multiple manual listeners to the same channel.
  *
  * @example
  * ```ts
  * const dispose = onMessage(
  *   "log length to console",
  *   ({ data }) => { console.log(data.length) },
- *   { passive: true }
+ *   { manual: true }
  * )
  * ```
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: PassiveCallback<ReadonlyDeep<MsgData<Key>>>,
+  callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>, MsgReturn<Key>>,
   options: OnMessageOptions<true>,
 ): () => void
 /**
@@ -209,25 +218,30 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<MsgData<Key>, MsgReturn<Key>>,
+  callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
   options?: OnMessageOptions<boolean>,
 ): () => void
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<MsgData<NoInfer<Key>>, MsgReturn<NoInfer<Key>>>,
+  callback: MsgCallback<
+    boolean,
+    MsgData<NoInfer<Key>>,
+    MsgReturn<NoInfer<Key>>
+  >,
   options: OnMessageOptions<boolean> = {},
 ) {
-  const passive = options.passive ?? false
+  const manual = options.manual ?? false
   const signal = options.signal
 
   if (signal?.aborted) {
     return noop
   }
 
-  if (passive) {
-    const listeners = pasiveListenersMap.get(id) ?? new Set()
+  if (manual) {
+    // TODO: use Map#getOrInsert
+    const listeners = manualListenersMap.get(id) ?? new Set()
     listeners.add(callback)
-    pasiveListenersMap.set(id, listeners)
+    manualListenersMap.set(id, listeners)
     const removeListener = () => listeners.delete(callback)
 
     if (signal) {
@@ -331,7 +345,9 @@ function handleForwardMessage(
 }
 
 // FIXME: side effects
-browser.runtime.onMessage.addListener(webextHandleMessage)
+browser.runtime.onMessage.addListener(
+  webextHandleMessage as Runtime.OnMessageListenerCallback,
+)
 
 /**
  * Handle message from runtime.onMessage
@@ -339,7 +355,7 @@ browser.runtime.onMessage.addListener(webextHandleMessage)
 export function webextHandleMessage(
   message: unknown,
   sender: Runtime.MessageSender,
-  sendResponse?: (response: unknown) => void,
+  sendResponse: (response: unknown) => void,
 ): true | Promise<unknown> | void {
   if (
     !message ||
@@ -377,19 +393,20 @@ export function webextHandleMessage(
 
   const id = message.id
 
-  // Run all passive listeners
-  const passiveListeners = pasiveListenersMap.get(id)
-  if (passiveListeners) {
-    for (const cb of passiveListeners) {
+  // Run all manual listeners
+  const manualListeners = manualListenersMap.get(id)
+  if (manualListeners) {
+    for (const cb of manualListeners) {
       try {
         cb({
           id,
           data: message.data,
           sender,
           originalSender: message.sender,
+          sendResponse: sendResponse,
         })
       } catch (e) {
-        // ignore passive listener error
+        // ignore manual listener error
         // catch error to prevent runtime.onMessage from throwing
         console.error(e)
       }
@@ -407,6 +424,7 @@ export function webextHandleMessage(
     data: message.data,
     sender,
     originalSender: message.sender,
+    sendResponse: undefined,
   })
     .then((data) => ({ data }))
     .catch((error: unknown) => ({
@@ -423,15 +441,15 @@ export function webextHandleMessage(
 
 export const onMessage = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  { get: (target, p: MsgKey) => onMessageImpl.bind(null, p) },
+  { get: (_, p: MsgKey) => onMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: {
     (
-      callback: PassiveCallback<ReadonlyDeep<MsgData<Key>>>,
+      callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>>,
       options: OnMessageOptions<true>,
     ): () => void
     (
-      callback: MsgCallback<MsgData<Key>, MsgReturn<Key>>,
+      callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
       options?: OnMessageOptions<boolean>,
     ): () => void
   }
@@ -439,7 +457,7 @@ export const onMessage = /* #__PURE__ */ new Proxy(
 
 export const sendMessage = /* #__PURE__ */ new Proxy(
   /* #__PURE__ */ Object.create(null),
-  { get: (target, p: MsgKey) => sendMessageImpl.bind(null, p) },
+  { get: (_, p: MsgKey) => sendMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: <Data extends MsgData<Key>>(
     ...args: SendParams<Data>
