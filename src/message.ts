@@ -14,9 +14,9 @@ import {
   noop,
 } from './util'
 
-const BackgroundForwardMessageId = '__webext_forward_tabs_message__'
+const BgForwardMsgId = '__webext_forward_tabs_message__'
 
-const MessageIdentifierKey = '__webext_message_identifier__'
+const MsgIdentifier = '__webext_message_identifier__'
 
 type Message<Data, Return, Manual extends boolean> = {
   id: string
@@ -103,8 +103,8 @@ async function sendMessageImpl<
 
   if (destination === 'content-script' && isContentScript) {
     res = await browser.runtime.sendMessage({
-      [MessageIdentifierKey]: 1,
-      id: BackgroundForwardMessageId,
+      [MsgIdentifier]: 1,
+      id: BgForwardMsgId,
       data: {
         tabId,
         frameId,
@@ -117,7 +117,7 @@ async function sendMessageImpl<
   // No tabId, send directly to background
   else if (tabId === undefined) {
     res = await browser.runtime.sendMessage({
-      [MessageIdentifierKey]: 1,
+      [MsgIdentifier]: 1,
       id,
       data,
       destination,
@@ -128,7 +128,7 @@ async function sendMessageImpl<
     res = await browser.tabs.sendMessage(
       tabId === 'active' ? await getActiveTabId() : tabId,
       {
-        [MessageIdentifierKey]: 1,
+        [MsgIdentifier]: 1,
         id,
         data,
         destination,
@@ -139,8 +139,8 @@ async function sendMessageImpl<
   // Send to tab and tabs API is not available, forward by background
   else {
     res = await browser.runtime.sendMessage({
-      [MessageIdentifierKey]: 1,
-      id: BackgroundForwardMessageId,
+      [MsgIdentifier]: 1,
+      id: BgForwardMsgId,
       data: {
         tabId,
         frameId,
@@ -175,8 +175,8 @@ async function sendMessageImpl<
 const listenersMap = new Map<string, MsgCallback>()
 const manualListenersMap = new Map<string, Set<MsgCallback<true>>>()
 
-type OnMessageOptions<P extends boolean> = {
-  manual?: P
+type OnMsgOptions<M extends boolean> = {
+  manual?: M
   signal?: AbortSignal
   // TODO:
   // once?: boolean
@@ -201,7 +201,7 @@ type OnMessageOptions<P extends boolean> = {
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
   callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>, MsgReturn<Key>>,
-  options: OnMessageOptions<true>,
+  options: OnMsgOptions<true>,
 ): () => void
 /**
  * Add a listener to the message channel.
@@ -219,7 +219,7 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
   callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
-  options?: OnMessageOptions<boolean>,
+  options?: OnMsgOptions<boolean>,
 ): () => void
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
@@ -228,7 +228,7 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
     MsgData<NoInfer<Key>>,
     MsgReturn<NoInfer<Key>>
   >,
-  options: OnMessageOptions<boolean> = {},
+  options: OnMsgOptions<boolean> = {},
 ) {
   const manual = options.manual ?? false
   const signal = options.signal
@@ -283,12 +283,12 @@ function handleForwardMessage(
   message: {
     id?: string
     data?: unknown
-    [MessageIdentifierKey]?: 1
+    [MsgIdentifier]?: 1
   },
   sender: Runtime.MessageSender,
 ) {
-  if (message[MessageIdentifierKey] !== 1) return
-  if (message.id !== BackgroundForwardMessageId) return
+  if (message[MsgIdentifier] !== 1) return
+  if (message.id !== BgForwardMsgId) return
 
   return new Promise(async (resolve, reject) => {
     const { tabId, frameId, id, data, destination } = message.data as {
@@ -317,7 +317,7 @@ function handleForwardMessage(
     if (destination === 'content-script' && targetTabId === undefined) {
       resolve(
         browser.runtime.sendMessage({
-          [MessageIdentifierKey]: 1,
+          [MsgIdentifier]: 1,
           id,
           data,
           sender,
@@ -336,7 +336,7 @@ function handleForwardMessage(
           data,
           sender,
           destination,
-          [MessageIdentifierKey]: 1,
+          [MsgIdentifier]: 1,
         },
         targetFrameId === undefined ? undefined : { frameId: targetFrameId },
       ),
@@ -360,7 +360,7 @@ export function webextHandleMessage(
   if (
     !message ||
     typeof message !== 'object' ||
-    Reflect.get(message, MessageIdentifierKey) !== 1
+    Reflect.get(message, MsgIdentifier) !== 1
   ) {
     return
   }
@@ -373,7 +373,7 @@ export function webextHandleMessage(
      */
     sender?: Runtime.MessageSender
     destination?: 'sidebar' | 'content-script'
-    [MessageIdentifierKey]?: 1
+    [MsgIdentifier]?: 1
   }>(message)
 
   if (isBackground) {
@@ -403,7 +403,7 @@ export function webextHandleMessage(
           data: message.data,
           sender,
           originalSender: message.sender,
-          sendResponse: sendResponse,
+          sendResponse,
         })
       } catch (e) {
         // ignore manual listener error
@@ -446,11 +446,11 @@ export const onMessage = /* #__PURE__ */ new Proxy(
   readonly [Key in keyof MessageProtocol]: {
     (
       callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>>,
-      options: OnMessageOptions<true>,
+      options: OnMsgOptions<true>,
     ): () => void
     (
       callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
-      options?: OnMessageOptions<boolean>,
+      options?: OnMsgOptions<boolean>,
     ): () => void
   }
 }
