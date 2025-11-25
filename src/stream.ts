@@ -164,7 +164,7 @@ function createStream<T = unknown, K = unknown>(
       const cleanupOnDisconnect = onClose(() => (resolve = reject = noop))
       const cleanupOnError = onError((err) => reject(err))
 
-      if (args.length) port.postMessage(args[0])
+      if (args.length) port.postMessage({ data: args[0] })
 
       try {
         while (connected) {
