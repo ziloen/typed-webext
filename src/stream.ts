@@ -157,21 +157,54 @@ function createStream<T = unknown, K = unknown>(
     onError,
     onClose,
     async *iter(...args) {
-      let resolve: (value: K) => void = noop
-      let reject: (reason?: any) => void = noop
+      type QueueItem<K> =
+        | { type: 'DATA'; value: K }
+        | { type: 'DONE'; value: null }
+        | { type: 'ERROR'; value: Error }
 
-      const cleanupOnMessage = onMessage((msg) => resolve(msg))
-      const cleanupOnDisconnect = onClose(() => (resolve = reject = noop))
-      const cleanupOnError = onError((err) => reject(err))
+      const queue: QueueItem<K>[] = []
+
+      let resolveSignal: (() => void) | null = null
+
+      const enqueue = (item: QueueItem<K>) => {
+        queue.push(item)
+        if (resolveSignal) {
+          resolveSignal()
+          resolveSignal = null
+        }
+      }
+
+      const cleanupOnMessage = onMessage((msg) => {
+        enqueue({ type: 'DATA', value: msg })
+      })
+      const cleanupOnDisconnect = onClose(() => {
+        enqueue({ type: 'DONE', value: null })
+      })
+      const cleanupOnError = onError((err) => {
+        enqueue({ type: 'ERROR', value: err })
+      })
 
       if (args.length) port.postMessage({ data: args[0] })
 
       try {
-        while (connected) {
-          const deferred = Promise.withResolvers<K>()
-          resolve = deferred.resolve
-          reject = deferred.reject
-          yield deferred.promise
+        while (true) {
+          if (queue.length === 0) {
+            const { promise, resolve } = Promise.withResolvers<void>()
+            resolveSignal = resolve
+            // eslint-disable-next-line no-await-in-loop
+            await promise
+          }
+
+          while (queue.length > 0) {
+            const item = queue.shift()!
+            if (item.type === 'DATA') {
+              yield item.value
+            } else if (item.type === 'DONE') {
+              return
+            } else if (item.type === 'ERROR') {
+              throw item.value
+            }
+          }
         }
       } finally {
         cleanupOnMessage()
