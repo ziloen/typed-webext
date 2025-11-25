@@ -1,7 +1,8 @@
+import { deserializeError, serializeError } from 'serialize-error'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
-import { asType, noop } from './util'
+import { noop } from './util'
 
 type StreamKey = keyof StreamProtocol
 type StreamData<Key extends StreamKey> = StreamProtocol[Key][0]
@@ -39,6 +40,10 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    */
   send: (msg: SendData) => void
   /**
+   * send error to another end and immediately close the stream
+   */
+  error: (error: Error) => void
+  /**
    * close the stream
    */
   close: () => void
@@ -46,6 +51,10 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    * listen to message from another end
    */
   onMessage: (callback: (msg: MsgData) => void) => () => void
+  /**
+   * listen to error event
+   */
+  onError: (callback: (error: Error) => void) => () => void
   /**
    * listen to close event
    */
@@ -64,6 +73,8 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    */
   iter: (msg?: SendData) => AsyncIterable<MsgData>
 
+  // TODO:
+  // onClose: (callback: (reason: 'error' | 'disconnect' | 'manual') => void) => () => void
   // [Symbol.dispose]
   // [Symbol.observable]
 }
@@ -88,6 +99,14 @@ function createStream<T = unknown, K = unknown>(
     abortController.abort()
   })
 
+  function close() {
+    if (connected) {
+      connected = false
+      abortController.abort()
+      port.disconnect()
+    }
+  }
+
   function onClose(callback: (port: Runtime.Port) => void) {
     port.onDisconnect.addListener(callback)
     return () =>
@@ -95,9 +114,27 @@ function createStream<T = unknown, K = unknown>(
   }
 
   function onMessage(callback: (message: K, port: Runtime.Port) => void) {
-    asType<(message: unknown, port: Runtime.Port) => void>(callback)
-    port.onMessage.addListener(callback)
-    return () => browser.runtime.id && port.onMessage.removeListener(callback)
+    function wrappedCallback(message: unknown, p: Runtime.Port) {
+      if (message && Object.hasOwn(message, 'data')) {
+        callback(message.data as K, p)
+      }
+    }
+
+    port.onMessage.addListener(wrappedCallback)
+    return () =>
+      browser.runtime.id && port.onMessage.removeListener(wrappedCallback)
+  }
+
+  function onError(callback: (error: Error, port: Runtime.Port) => void) {
+    function wrappedCallback(message: unknown, p: Runtime.Port) {
+      if (message && Object.hasOwn(message, 'error')) {
+        callback(deserializeError(message.error), p)
+      }
+    }
+
+    port.onMessage.addListener(wrappedCallback)
+    return () =>
+      browser.runtime.id && port.onMessage.removeListener(wrappedCallback)
   }
 
   return {
@@ -106,33 +143,40 @@ function createStream<T = unknown, K = unknown>(
     send(msg) {
       // avoid sending message after disconnect
       if (connected) {
-        port.postMessage(msg)
+        port.postMessage({ data: msg })
       }
     },
-    close() {
+    error(error: Error) {
       if (connected) {
-        connected = false
-        port.disconnect()
+        port.postMessage({ error: serializeError(error) })
+        close()
       }
     },
+    close,
     onMessage,
+    onError,
     onClose,
     async *iter(...args) {
-      let resolve: (value: K) => void
+      let resolve: (value: K) => void = noop
+      let reject: (reason?: any) => void = noop
 
       const cleanupOnMessage = onMessage((msg) => resolve(msg))
-      const cleanupOnDisconnect = onClose(() => (resolve = noop))
+      const cleanupOnDisconnect = onClose(() => (resolve = reject = noop))
+      const cleanupOnError = onError((err) => reject(err))
 
       if (args.length) port.postMessage(args[0])
 
       try {
-        while (true) {
-          // eslint-disable-next-line @typescript-eslint/no-loop-func
-          yield new Promise<K>((r) => (resolve = r))
+        while (connected) {
+          const deferred = Promise.withResolvers<K>()
+          resolve = deferred.resolve
+          reject = deferred.reject
+          yield deferred.promise
         }
       } finally {
         cleanupOnMessage()
         cleanupOnDisconnect()
+        cleanupOnError()
       }
     },
     // [Symbol.dispose]
