@@ -11,6 +11,7 @@ export default defineConfig({
   format: ['esm'],
   platform: 'node',
   treeshake: true,
+  fixedExtension: false,
   sourcemap: true,
   clean: true,
 })

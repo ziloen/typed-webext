@@ -34,24 +34,24 @@
     "@types/webextension-polyfill": "^0.12.4",
     "rxjs": "^7.8.2",
     "serialize-error": "<=13",
-    "type-fest": "^5.1.0",
+    "type-fest": "^5.2.0",
     "webextension-polyfill": ">=0.12.0 <=1.0.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@prettier/plugin-oxc": "^0.0.4",
-    "@types/react": "^19.2.2",
+    "@prettier/plugin-oxc": "^0.0.5",
+    "@types/react": "^19.2.7",
     "@ziloen/eslint-config": "^0.1.73",
     "bumpp": "^10.3.1",
-    "eslint": "^9.38.0",
+    "eslint": "^9.39.1",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",
     "ts-lib-enhance": "^1.0.21",
-    "tsdown": "^0.15.12",
+    "tsdown": "^0.16.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.5"
+    "vitest": "^4.0.13"
   },
   "peerDependencies": {
     "react": ">=19.0.0",
