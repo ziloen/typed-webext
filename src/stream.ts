@@ -2,7 +2,6 @@ import { deserializeError, serializeError } from 'serialize-error'
 import type { Runtime } from 'webextension-polyfill'
 import * as browser from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
-import { noop } from './util'
 
 type StreamKey = keyof StreamProtocol
 type StreamData<Key extends StreamKey> = StreamProtocol[Key][0]
@@ -164,20 +163,20 @@ function createStream<T = unknown, K = unknown>(
 
       const queue: QueueItem<K>[] = []
 
-      let resolveSignal: (() => void) | null = null
+      let resolve: (() => void) | null = null
 
       const enqueue = (item: QueueItem<K>) => {
         queue.push(item)
-        if (resolveSignal) {
-          resolveSignal()
-          resolveSignal = null
+        if (resolve) {
+          resolve()
+          resolve = null
         }
       }
 
       const cleanupOnMessage = onMessage((msg) => {
         enqueue({ type: 'DATA', value: msg })
       })
-      const cleanupOnDisconnect = onClose(() => {
+      const cleanupOnClose = onClose(() => {
         enqueue({ type: 'DONE', value: null })
       })
       const cleanupOnError = onError((err) => {
@@ -189,10 +188,8 @@ function createStream<T = unknown, K = unknown>(
       try {
         while (true) {
           if (queue.length === 0) {
-            const { promise, resolve } = Promise.withResolvers<void>()
-            resolveSignal = resolve
-            // eslint-disable-next-line no-await-in-loop
-            await promise
+            // eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+            await new Promise<void>((r) => (resolve = r))
           }
 
           while (queue.length > 0) {
@@ -208,7 +205,7 @@ function createStream<T = unknown, K = unknown>(
         }
       } finally {
         cleanupOnMessage()
-        cleanupOnDisconnect()
+        cleanupOnClose()
         cleanupOnError()
       }
     },

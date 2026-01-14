@@ -12,6 +12,5 @@ export default defineConfig({
   platform: 'node',
   treeshake: true,
   fixedExtension: false,
-  sourcemap: true,
   clean: true,
 })
