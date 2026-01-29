@@ -5,6 +5,10 @@ import Browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 import type { ObjectDefaults, StorageLocalChange } from './storage'
 
+/**
+ * @param keys - The keys to listen to in storage.local
+ * @returns A tuple containing the current state of the specified keys and a loading boolean
+ */
 export function useStorageLocal<K extends keyof StorageLocalProtocol>(
   keys: readonly K[],
 ): [
@@ -16,6 +20,10 @@ export function useStorageLocal<K extends keyof StorageLocalProtocol>(
   loading: boolean,
 ]
 
+/**
+ * @param defaults - An object specifying default values for keys in storage.local
+ * @returns A tuple containing the current state of the specified keys with defaults and a loading boolean
+ */
 export function useStorageLocal<const O extends Record<string, any>>(
   defaults:
     | O
