@@ -7,6 +7,11 @@ type StreamKey = keyof StreamProtocol
 type StreamData<Key extends StreamKey> = StreamProtocol[Key][0]
 type StreamReturn<Key extends StreamKey> = StreamProtocol[Key][1]
 
+type DisposableCleanup = {
+  (): void
+  [Symbol.dispose]: () => void
+}
+
 /**
  * Stream interface for sending and receiving messages
  */
@@ -49,15 +54,15 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
   /**
    * listen to message from another end
    */
-  onMessage: (callback: (msg: MsgData) => void) => () => void
+  onMessage: (callback: (msg: MsgData) => void) => DisposableCleanup
   /**
    * listen to error event
    */
-  onError: (callback: (error: Error) => void) => () => void
+  onError: (callback: (error: Error) => void) => DisposableCleanup
   /**
    * listen to close event
    */
-  onClose: (callback: () => void) => () => void
+  onClose: (callback: () => void) => DisposableCleanup
   /**
    * async iterator for messages from another end
    *
@@ -74,8 +79,11 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
 
   // TODO:
   // onClose: (callback: (reason: 'error' | 'disconnect' | 'manual') => void) => () => void
-  // [Symbol.dispose]
-  // [Symbol.observable]
+}
+
+function withDisposal(fn: (() => void) & { [Symbol.dispose]?: () => void }) {
+  fn[Symbol.dispose] = fn
+  return fn as DisposableCleanup
 }
 
 type StreamCallback<SendData, MsgData> = (
@@ -91,25 +99,27 @@ function createStream<T = unknown, K = unknown>(
   port: Runtime.Port,
 ): Stream<T, K> {
   let connected = true
-  const abortController = new AbortController()
+  const ac = new AbortController()
 
   port.onDisconnect.addListener(() => {
     connected = false
-    abortController.abort()
+    ac.abort()
   })
 
   function close() {
     if (connected) {
       connected = false
-      abortController.abort()
+      ac.abort()
       port.disconnect()
     }
   }
 
   function onClose(callback: (port: Runtime.Port) => void) {
     port.onDisconnect.addListener(callback)
-    return () =>
+
+    return withDisposal(() => {
       browser.runtime.id && port.onDisconnect.removeListener(callback)
+    })
   }
 
   function onMessage(callback: (message: K, port: Runtime.Port) => void) {
@@ -120,8 +130,10 @@ function createStream<T = unknown, K = unknown>(
     }
 
     port.onMessage.addListener(wrappedCallback)
-    return () =>
+
+    return withDisposal(() => {
       browser.runtime.id && port.onMessage.removeListener(wrappedCallback)
+    })
   }
 
   function onError(callback: (error: Error, port: Runtime.Port) => void) {
@@ -131,14 +143,18 @@ function createStream<T = unknown, K = unknown>(
       }
     }
 
+    // TODO: Can we just use onDisconnect + runtime.lastError?
+
     port.onMessage.addListener(wrappedCallback)
-    return () =>
+
+    return withDisposal(() => {
       browser.runtime.id && port.onMessage.removeListener(wrappedCallback)
+    })
   }
 
   return {
     port,
-    signal: abortController.signal,
+    signal: ac.signal,
     send(msg) {
       // avoid sending message after disconnect
       if (connected) {
@@ -173,44 +189,30 @@ function createStream<T = unknown, K = unknown>(
         }
       }
 
-      const cleanupOnMessage = onMessage((msg) => {
-        enqueue({ type: 'DATA', value: msg })
-      })
-      const cleanupOnClose = onClose(() => {
-        enqueue({ type: 'DONE', value: null })
-      })
-      const cleanupOnError = onError((err) => {
-        enqueue({ type: 'ERROR', value: err })
-      })
+      using m = onMessage((msg) => enqueue({ type: 'DATA', value: msg }))
+      using c = onClose(() => enqueue({ type: 'DONE', value: null }))
+      using e = onError((err) => enqueue({ type: 'ERROR', value: err }))
 
       if (args.length) port.postMessage({ data: args[0] })
 
-      try {
-        while (true) {
-          if (queue.length === 0) {
-            // eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
-            await new Promise<void>((r) => (resolve = r))
-          }
+      while (true) {
+        if (queue.length === 0) {
+          // eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+          await new Promise<void>((r) => (resolve = r))
+        }
 
-          while (queue.length > 0) {
-            const item = queue.shift()!
-            if (item.type === 'DATA') {
-              yield item.value
-            } else if (item.type === 'DONE') {
-              return
-            } else if (item.type === 'ERROR') {
-              throw item.value
-            }
+        while (queue.length > 0) {
+          const item = queue.shift()!
+          if (item.type === 'DATA') {
+            yield item.value
+          } else if (item.type === 'DONE') {
+            return
+          } else if (item.type === 'ERROR') {
+            throw item.value
           }
         }
-      } finally {
-        cleanupOnMessage()
-        cleanupOnClose()
-        cleanupOnError()
       }
     },
-    // [Symbol.dispose]
-    // [Symbol.observable]
   }
 }
 
