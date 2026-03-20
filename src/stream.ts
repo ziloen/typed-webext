@@ -9,7 +9,7 @@ type StreamReturn<Key extends StreamKey> = StreamProtocol[Key][1]
 
 type DisposableCleanup = {
   (): void
-  [Symbol.dispose]: () => void
+  [Symbol.dispose](): void
 }
 
 /**

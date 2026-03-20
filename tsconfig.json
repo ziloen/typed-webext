@@ -23,8 +23,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    // "allowUnusedLabels": true,
-    // "allowUnreachableCode": true,
     /**
      * ===== Emit =====
      */
@@ -39,7 +37,6 @@
     "resolveJsonModule": true,
     "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true,
-    "downlevelIteration": false,
     /**
      * ===== Interop Constraints =====
      */
@@ -49,12 +46,6 @@
     "isolatedDeclarations": true,
     "declaration": true,
     "esModuleInterop": true,
-    /**
-     * ===== Output Formatting =====
-     */
-    "preserveWatchOutput": true,
-    "pretty": true,
-    "noErrorTruncation": false,
     "lib": [
       "ESNext",
       "DOM"

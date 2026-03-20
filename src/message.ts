@@ -172,12 +172,27 @@ async function sendMessageImpl<
   return res.data
 }
 
-const listenersMap = new Map<string, MsgCallback>()
-const manualListenersMap = new Map<string, Set<MsgCallback<true>>>()
+const listenersMap = new Map<
+  string,
+  { callback: MsgCallback; options: OnMsgOptions<false> }
+>()
+const manualListenersMap = new Map<
+  string,
+  Map<
+    MsgCallback<true>,
+    { callback: MsgCallback<true>; options: OnMsgOptions<true> }
+  >
+>()
 
 type OnMsgOptions<M extends boolean> = {
   manual?: M
   signal?: AbortSignal
+  /**
+   * Only listen to messages from specific tab
+   *
+   * Only works in background for now
+   */
+  tabId?: number
   // TODO:
   // once?: boolean
 }
@@ -239,8 +254,15 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
 
   if (manual) {
     // TODO: use Map#getOrInsert
-    const listeners = manualListenersMap.get(id) ?? new Set()
-    listeners.add(callback)
+    const listeners =
+      manualListenersMap.get(id) ??
+      (new Map() as typeof manualListenersMap extends Map<infer K, infer V>
+        ? V
+        : never)
+    listeners.set(callback, {
+      callback,
+      options: options as OnMsgOptions<true>,
+    })
     manualListenersMap.set(id, listeners)
     const removeListener = () => listeners.delete(callback)
 
@@ -260,7 +282,7 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
   if (listener) {
     throw new Error(`Message ID "${id}" already has a listener.`)
   }
-  listenersMap.set(id, callback)
+  listenersMap.set(id, { callback, options: options as OnMsgOptions<false> })
   const removeListener = () => listenersMap.delete(id)
   if (signal) {
     signal.addEventListener('abort', removeListener)
@@ -396,9 +418,19 @@ export function webextHandleMessage(
   // Run all manual listeners
   const manualListeners = manualListenersMap.get(id)
   if (manualListeners) {
-    for (const cb of manualListeners) {
+    for (const { callback, options } of manualListeners.values()) {
+      if (options.tabId !== undefined) {
+        const isTargetTab = isContentScript
+          ? message.sender?.tab?.id === options.tabId
+          : sender?.tab?.id === options.tabId
+
+        if (!isTargetTab) {
+          continue
+        }
+      }
+
       try {
-        cb({
+        callback({
           id,
           data: message.data,
           sender,
@@ -417,9 +449,20 @@ export function webextHandleMessage(
   if (!listener) {
     return
   }
+  const { callback, options } = listener
+
+  if (options?.tabId !== undefined) {
+    const isTargetTab = isContentScript
+      ? message.sender?.tab?.id === options.tabId
+      : sender?.tab?.id === options.tabId
+
+    if (!isTargetTab) {
+      return
+    }
+  }
 
   // Run the listener
-  Promise.try(listener, {
+  Promise.try(callback, {
     id,
     data: message.data,
     sender,
