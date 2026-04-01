@@ -39,6 +39,8 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
    * ```
    */
   signal: AbortSignal
+
+  isConnected: boolean
   /**
    * send data to another end
    */
@@ -98,17 +100,19 @@ const listeners = new Map<string, StreamCallback<any, any>>()
 function createStream<T = unknown, K = unknown>(
   port: Runtime.Port,
 ): Stream<T, K> {
-  let connected = true
+  let isConnected = true
   const ac = new AbortController()
 
   port.onDisconnect.addListener(() => {
-    connected = false
+    isConnected = false
+    stream.isConnected = false
     ac.abort()
   })
 
   function close() {
-    if (connected) {
-      connected = false
+    if (isConnected) {
+      isConnected = false
+      stream.isConnected = false
       ac.abort()
       port.disconnect()
     }
@@ -152,17 +156,18 @@ function createStream<T = unknown, K = unknown>(
     })
   }
 
-  return {
+  const stream: Stream<T, K> = {
     port,
+    isConnected,
     signal: ac.signal,
     send(msg) {
       // avoid sending message after disconnect
-      if (connected) {
+      if (isConnected) {
         port.postMessage({ data: msg })
       }
     },
     error(error: Error) {
-      if (connected) {
+      if (isConnected) {
         port.postMessage({ error: serializeError(error) })
         close()
       }
@@ -214,6 +219,8 @@ function createStream<T = unknown, K = unknown>(
       }
     },
   }
+
+  return stream
 }
 
 /**

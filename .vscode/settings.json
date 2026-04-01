@@ -1,6 +1,6 @@
 {
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "oxc.oxc-vscode"
   },
   "eslint.format.enable": false,
   "js/ts.tsdk.path": "node_modules\\typescript\\lib"

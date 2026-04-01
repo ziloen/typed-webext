@@ -34,21 +34,21 @@ export function useStorageLocal<const O extends Record<string, any>>(
       } & Record<string, any>),
 ): [state: ObjectDefaults<O>, loading: boolean]
 
+// TODO: Check if the subscription is correctly cleaned up in Strict mode, Concurrent mode, and <Activity />
+
 export function useStorageLocal(keys: string[] | Record<string, any>) {
   const sub = useRef<null | Subscription>(null)
   const keysLatest = useRef(keys)
   keysLatest.current = keys
 
   function initState(): [state: Record<string, unknown>, loading: boolean] {
+    const keys = keysLatest.current
     const isArray = Array.isArray(keys)
     const storageKyes = new Set(isArray ? keys : Object.keys(keys))
 
-    // 保存当前结果
     let state: Record<string, unknown> | null = null
 
-    // 监听
     sub.current = cache.update$.subscribe((updateKeys) => {
-      // 如果更新的 key 包含在监听的 key 中，则更新
       const intersection = updateKeys.intersection(storageKyes)
       if (!intersection.size) return
 
@@ -61,7 +61,6 @@ export function useStorageLocal(keys: string[] | Record<string, any>) {
       ])
     })
 
-    // 初始化
     const data = cache.getData(storageKyes)
 
     if (data) {
