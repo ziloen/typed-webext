@@ -58,4 +58,22 @@ async function typeOnlyTest() {
       { __test__string_literal: 'A' | 'B'; __test__string_array: string[] }
     >
   >
+
+  const arrayKeys = await getStorageLocal([
+    '__test__string_literal',
+    '__test__string_array',
+    '__test__not_exist_key',
+    '__test__not_exist_key',
+  ])
+
+  type ArrayKeys = Expect<
+    Equal<
+      typeof arrayKeys,
+      {
+        __test__string_literal?: 'A' | 'B'
+        __test__string_array?: string[]
+        __test__not_exist_key?: unknown
+      }
+    >
+  >
 }

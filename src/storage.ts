@@ -3,6 +3,9 @@ import type { StorageLocalProtocol } from './index'
 
 type Key = keyof StorageLocalProtocol
 type StorageValue<K extends Key> = StorageLocalProtocol[K]
+type LooseStorageValue<K extends string> = K extends Key
+  ? StorageLocalProtocol[K]
+  : unknown
 
 type MakeArrayReadonly<T> = T extends (infer U)[] ? readonly U[] : T
 type MakeArrayWritable<T> = T extends readonly (infer U)[]
@@ -78,10 +81,10 @@ export async function getStorageLocal<D>(
  * //    ^ { a?: string, b?: number }
  * ```
  */
-export async function getStorageLocal<const K extends Key>(
-  key: K[],
+export async function getStorageLocal<K extends string>(
+  key: K[] | (NoInfer<K> | Key)[],
 ): Promise<{
-  [P in K]?: StorageValue<P>
+  [P in K]?: LooseStorageValue<P>
 }>
 /**
  * Get multiple storage.local values with default values

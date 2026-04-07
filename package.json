@@ -42,13 +42,13 @@
   ],
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "@ziloen/eslint-config": "^0.1.80",
+    "@ziloen/eslint-config": "^0.1.81",
     "bumpp": "^11.0.1",
-    "eslint": "^10.1.0",
-    "oxfmt": "^0.43.0",
+    "eslint": "^10.2.0",
+    "oxfmt": "^0.44.0",
     "ts-lib-enhance": "^1.0.22",
     "tsdown": "^0.21.7",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "vitest": "^4.1.2"
   },
   "peerDependencies": {
