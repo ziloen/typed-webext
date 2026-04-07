@@ -13,4 +13,5 @@ export default defineConfig({
   treeshake: true,
   fixedExtension: false,
   clean: true,
+  target: "es2023"
 })
