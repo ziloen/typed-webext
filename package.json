@@ -34,7 +34,7 @@
     "@types/webextension-polyfill": "^0.12.5",
     "rxjs": "^7.8.2",
     "serialize-error": "<=13",
-    "type-fest": "^5.5.0",
+    "type-fest": "^5.6.0",
     "webextension-polyfill": ">=0.12.0 <=1.0.0"
   },
   "files": [
@@ -42,14 +42,14 @@
   ],
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "@ziloen/eslint-config": "^0.1.81",
-    "bumpp": "^11.0.1",
-    "eslint": "^10.2.0",
-    "oxfmt": "^0.44.0",
+    "@ziloen/eslint-config": "^0.1.82",
+    "bumpp": "^11.1.0",
+    "eslint": "^10.3.0",
+    "oxfmt": "^0.48.0",
     "ts-lib-enhance": "^1.0.22",
-    "tsdown": "^0.21.7",
-    "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "tsdown": "^0.22.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

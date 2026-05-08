@@ -215,7 +215,7 @@ type OnMsgOptions<M extends boolean> = {
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>, MsgReturn<Key>>,
+  callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>>,
   options: OnMsgOptions<true>,
 ): () => void
 /**
@@ -233,16 +233,12 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
+  callback: MsgCallback,
   options?: OnMsgOptions<boolean>,
 ): () => void
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<
-    boolean,
-    MsgData<NoInfer<Key>>,
-    MsgReturn<NoInfer<Key>>
-  >,
+  callback: MsgCallback<boolean>,
   options: OnMsgOptions<boolean> = {},
 ) {
   const manual = options.manual ?? false
@@ -491,10 +487,7 @@ export const onMessage = /* #__PURE__ */ new Proxy(
       callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>>,
       options: OnMsgOptions<true>,
     ): () => void
-    (
-      callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
-      options?: OnMsgOptions<boolean>,
-    ): () => void
+    (callback: MsgCallback, options?: OnMsgOptions<boolean>): () => void
   }
 }
 

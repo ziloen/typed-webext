@@ -299,12 +299,21 @@ export function webextHandleStream(port: Runtime.Port): void {
   const channel = port.name
   const listener = listeners.get(channel)
 
-  if (!listener) {
-    console.error(`Channel "${channel}" has no listener.`)
+  if (listener) {
+    listener(createStream(port))
     return
   }
 
-  listener(createStream(port))
+  // Firefox may trigger onConnect before the listener is registered, so we delay the check to the next tick to give the listener a chance to register
+  Promise.resolve().then(() => {
+    const listener = listeners.get(channel)
+    if (listener) {
+      listener(createStream(port))
+    } else {
+      console.error(`Channel "${channel}" has no listener.`)
+      port.disconnect()
+    }
+  })
 }
 
 // FIXME: side effects
