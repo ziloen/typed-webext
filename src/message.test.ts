@@ -10,4 +10,8 @@ async function typeOnlyTest() {
   const normal = await sendMessage.__test__('')
 
   type Normal = Expect<Equal<typeof normal, number>>
+
+  const stringLiteral = await sendMessage.__test__string_literal('')
+
+  type StringLiteral = Expect<Equal<typeof stringLiteral, 'A' | 'B'>>
 }

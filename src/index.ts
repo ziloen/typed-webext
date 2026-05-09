@@ -37,6 +37,8 @@ export interface StreamProtocol {
 export interface MessageProtocol<T = unknown> {
   /** @internal */
   __test__: [data: string, result: number]
+  /** @internal */
+  __test__string_literal: [data: string, result: 'A' | 'B']
 }
 
 /**
