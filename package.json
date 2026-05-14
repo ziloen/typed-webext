@@ -45,11 +45,11 @@
     "@ziloen/eslint-config": "^0.1.82",
     "bumpp": "^11.1.0",
     "eslint": "^10.3.0",
-    "oxfmt": "^0.48.0",
+    "oxfmt": "^0.49.0",
     "ts-lib-enhance": "^1.0.22",
     "tsdown": "^0.22.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   },
   "peerDependencies": {
     "react": ">=19.0.0",

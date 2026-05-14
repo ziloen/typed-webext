@@ -247,8 +247,8 @@ function onOpenStreamImpl<T extends StreamKey>(
   }
 }
 
-export const onOpenStream = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
+export const onOpenStream = /*#__PURE__*/ new Proxy(
+  /*#__PURE__*/ Object.create(null),
   { get: (_, p: StreamKey) => onOpenStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: (
@@ -282,8 +282,8 @@ function openStreamImpl<T extends StreamKey>(
   return createStream(port)
 }
 
-export const openStream = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
+export const openStream = /*#__PURE__*/ new Proxy(
+  /*#__PURE__*/ Object.create(null),
   { get: (_, p: StreamKey) => openStreamImpl.bind(null, p) },
 ) as {
   [Key in keyof StreamProtocol]: () => Stream<
@@ -307,14 +307,15 @@ export function webextHandleStream(port: Runtime.Port): void {
   // Firefox may trigger onConnect before the listener is registered, so we delay the check to the next tick to give the listener a chance to register
   Promise.resolve().then(() => {
     const listener = listeners.get(channel)
+
     if (listener) {
       listener(createStream(port))
     } else {
       console.error(`Channel "${channel}" has no listener.`)
-      port.disconnect()
+      // The port might be used in another onConnect event
+      // port.disconnect()
     }
   })
 }
 
-// FIXME: side effects
 browser.runtime.onConnect.addListener(webextHandleStream)

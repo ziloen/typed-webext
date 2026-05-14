@@ -295,11 +295,11 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
   }
 }
 
-const isBackground = /* #__PURE__ */ isBackgroundPage()
+const isBackground = /*#__PURE__*/ isBackgroundPage()
 
-const isSidepanel = /* #__PURE__ */ isSidepanelPageSync()
+const isSidepanel = /*#__PURE__*/ isSidepanelPageSync()
 
-const isContentScript = /* #__PURE__ */ isContentScriptPage()
+const isContentScript = /*#__PURE__*/ isContentScriptPage()
 
 function handleForwardMessage(
   message: {
@@ -482,8 +482,8 @@ export function webextHandleMessage(
   return true
 }
 
-export const onMessage = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
+export const onMessage = /*#__PURE__*/ new Proxy(
+  /*#__PURE__*/ Object.create(null),
   { get: (_, p: MsgKey) => onMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: {
@@ -498,8 +498,8 @@ export const onMessage = /* #__PURE__ */ new Proxy(
   }
 }
 
-export const sendMessage = /* #__PURE__ */ new Proxy(
-  /* #__PURE__ */ Object.create(null),
+export const sendMessage = /*#__PURE__*/ new Proxy(
+  /*#__PURE__*/ Object.create(null),
   { get: (_, p: MsgKey) => sendMessageImpl.bind(null, p) },
 ) as {
   readonly [Key in keyof MessageProtocol]: <Data extends MsgData<Key>>(

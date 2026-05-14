@@ -177,7 +177,7 @@ class StorageCache {
   }
 }
 
-const cache = /* #__PURE__ */ new StorageCache()
+const cache = /*#__PURE__*/ new StorageCache()
 
 function buildState(
   oldState: Record<string, unknown> | null,
@@ -207,9 +207,9 @@ function buildState(
  * Shared observable for storage.local changes
  */
 export const storageLocalChanged$: Observable<StorageLocalChange> =
-  /* #__PURE__ */ fromEventPattern(
+  /*#__PURE__*/ fromEventPattern(
     (handler) => Browser.storage.onChanged.addListener(handler),
     (handler) =>
       Browser.runtime.id && Browser.storage.onChanged.removeListener(handler),
     (changes: StorageLocalChange) => changes,
-  ).pipe(/* #__PURE__ */ share({ resetOnRefCountZero: true }))
+  ).pipe(/*#__PURE__*/ share({ resetOnRefCountZero: true }))
