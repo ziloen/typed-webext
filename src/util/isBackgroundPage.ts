@@ -1,31 +1,36 @@
-import * as browser from 'webextension-polyfill'
+// https://github.com/wxt-dev/wxt/blob/main/packages/is-background/src/getter.ts
+
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+declare class ServiceWorkerGlobalScope {}
 
 /**
  * Check if the current page is the background page
  */
 /* #__NO_SIDE_EFFECTS__ */
-export function isBackgroundPage(): boolean {
+export function getIsBackground(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/consistent-type-imports
+  const browser: import('webextension-polyfill').Browser | undefined =
+    // @ts-expect-error just ignore
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    globalThis.browser?.runtime?.id ? globalThis.browser : globalThis.chrome
+
+  if (!browser?.runtime.id) {
+    return false
+  }
+
   // Chromium
   if (
-    !('serviceWorker' in navigator) &&
-    browser.extension &&
-    !browser.extension.getViews
+    // eslint-disable-next-line unicorn/no-typeof-undefined
+    typeof ServiceWorkerGlobalScope !== 'undefined' &&
+    globalThis instanceof ServiceWorkerGlobalScope
   ) {
     return true
   }
 
   // Firefox
-  try {
-    const currentUrl = new URL(window.location.href)
-    // @ts-expect-error background is not in all manifest type
-    const scripts = browser.runtime.getManifest().background.scripts as string[]
-    return scripts.some((script: string) => {
-      const url = new URL(browser.runtime.getURL(script))
-      return (
-        currentUrl.pathname === url.pathname && currentUrl.origin === url.origin
-      )
-    })
-  } catch {
-    return false
-  }
+  return (
+    typeof window !== 'undefined' &&
+    typeof browser.extension?.getBackgroundPage === 'function' &&
+    browser.extension.getBackgroundPage() === window
+  )
 }

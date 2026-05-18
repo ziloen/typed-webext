@@ -310,10 +310,6 @@ export function webextHandleStream(port: Runtime.Port): void {
 
     if (listener) {
       listener(createStream(port))
-    } else {
-      console.error(`Channel "${channel}" has no listener.`)
-      // The port might be used in another onConnect event
-      // port.disconnect()
     }
   })
 }

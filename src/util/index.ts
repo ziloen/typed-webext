@@ -1,6 +1,6 @@
 import * as browser from 'webextension-polyfill'
 
-export { isBackgroundPage } from './isBackgroundPage'
+export { getIsBackground } from './isBackgroundPage'
 export { isContentScriptPage } from './isContentScriptPage'
 export { isSidepanelPage, isSidepanelPageSync } from './isSidepanelPage'
 

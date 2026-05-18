@@ -7,7 +7,7 @@ import type { MessageProtocol } from './index'
 import {
   asType,
   getActiveTabId,
-  isBackgroundPage,
+  getIsBackground,
   isContentScriptPage,
   isSidepanelPageSync,
   isTabsApiAvailable,
@@ -295,7 +295,7 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
   }
 }
 
-const isBackground = /*#__PURE__*/ isBackgroundPage()
+const isBackground = /*#__PURE__*/ getIsBackground()
 
 const isSidepanel = /*#__PURE__*/ isSidepanelPageSync()
 
