@@ -3,6 +3,15 @@ import { expectTypeOf, test } from 'vitest'
 import type { getStorageLocal as getLocalStorageType } from './storage'
 import type { Equal, Expect } from './util'
 
+declare module './' {
+  interface StorageLocalProtocol {
+    /** @internal */
+    __test__string_literal: 'A' | 'B'
+    /** @internal */
+    __test__string_array: string[]
+  }
+}
+
 declare const getStorageLocal: typeof getLocalStorageType
 
 test('getStorageLocal type tests', async () => {

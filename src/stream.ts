@@ -306,11 +306,7 @@ export function webextHandleStream(port: Runtime.Port): void {
 
   // Firefox may trigger onConnect before the listener is registered, so we delay the check to the next tick to give the listener a chance to register
   Promise.resolve().then(() => {
-    const listener = listeners.get(channel)
-
-    if (listener) {
-      listener(createStream(port))
-    }
+    listeners.get(channel)?.(createStream(port))
   })
 }
 

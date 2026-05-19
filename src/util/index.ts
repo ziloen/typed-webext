@@ -43,5 +43,23 @@ export type Equal<X, Y> =
     ? true
     : false
 
+/**
+ * @internal
+ *
+ * Check if `T` has `void` or `undefined`
+ *
+ * @example
+ * ```ts
+ * type T1 = HasVoidOrUndefined<void | undefined> // true
+ * type T2 = HasVoidOrUndefined<void | number> // true
+ * type T3 = HasVoidOrUndefined<number> // false
+ * ```
+ */
+export type HasVoidOrUndefined<T> = true extends (
+  T extends void | undefined ? true : false
+)
+  ? true
+  : false
+
 /** @internal */
 export type Expect<T extends true> = T

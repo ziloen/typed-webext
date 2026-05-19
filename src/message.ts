@@ -24,7 +24,6 @@ type Message<Data, Return, Manual extends boolean> = {
    * The sender of the message
    */
   sender: Runtime.MessageSender
-  data: Data
   /**
    * The original sender of the message if it is forwarded by background
    */
@@ -36,7 +35,9 @@ type Message<Data, Return, Manual extends boolean> = {
   sendResponse: Manual extends true
     ? (response: Promisable<Return>) => void
     : undefined
-}
+} & (true extends (Data extends void | undefined ? true : false)
+  ? { data?: Data }
+  : { data: Data })
 
 type MsgKey = keyof MessageProtocol
 type MsgData<Key extends MsgKey> = MessageProtocol[Key][0]
@@ -206,8 +207,7 @@ type OnMsgOptions<M extends boolean> = {
  *
  * @example
  * ```ts
- * const dispose = onMessage(
- *   "log length to console",
+ * const dispose = onMessage.log_length(
  *   ({ data }) => { console.log(data.length) },
  *   { manual: true }
  * )
@@ -215,7 +215,9 @@ type OnMsgOptions<M extends boolean> = {
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>, MsgReturn<Key>>,
+  callback: NoInfer<
+    MsgCallback<true, ReadonlyDeep<MsgData<Key>>, MsgReturn<Key>>
+  >,
   options: OnMsgOptions<true>,
 ): () => void
 /**
@@ -225,15 +227,12 @@ function onMessageImpl<Key extends keyof MessageProtocol>(
  *
  * @example
  * ```ts
- * const dispose = onMessage(
- *   "get message length",
- *   ({ data }) => data.length
- * )
+ * const dispose = onMessage.get_length(({ data }) => data.length)
  * ```
  */
 function onMessageImpl<Key extends keyof MessageProtocol>(
   id: Key,
-  callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
+  callback: NoInfer<MsgCallback<false, MsgData<Key>, MsgReturn<Key>>>,
   options?: OnMsgOptions<boolean>,
 ): () => void
 function onMessageImpl<Key extends keyof MessageProtocol>(
@@ -488,12 +487,12 @@ export const onMessage = /*#__PURE__*/ new Proxy(
 ) as {
   readonly [Key in keyof MessageProtocol]: {
     (
-      callback: MsgCallback<true, ReadonlyDeep<MsgData<Key>>>,
+      callback: MsgCallback<true, MsgData<Key>, MsgReturn<Key>>,
       options: OnMsgOptions<true>,
     ): () => void
     (
       callback: MsgCallback<false, MsgData<Key>, MsgReturn<Key>>,
-      options?: OnMsgOptions<boolean>,
+      options?: OnMsgOptions<false>,
     ): () => void
   }
 }

@@ -11,6 +11,7 @@
     "prepack": "npm run build",
     "release": "bumpp --commit --no-push && npm publish",
     "test": "vitest",
+    "typecheck": "tsc --noEmit",
     "fmt": "oxfmt"
   },
   "keywords": [

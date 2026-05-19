@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export { listenExtensionEvent } from './listenExtensionEvent'
 export { onMessage, sendMessage, webextHandleMessage } from './message'
 export {
@@ -34,19 +35,9 @@ export interface StreamProtocol {
  * }
  * ```
  */
-export interface MessageProtocol<T = unknown> {
-  /** @internal */
-  __test__: [data: string, result: number]
-  /** @internal */
-  __test__string_literal: [data: string, result: 'A' | 'B']
-}
+export interface MessageProtocol<T = unknown> {}
 
 /**
  * Used by `getStorageLocal`, `removeStorageLocal`, `setStorageLocal` and `onStorageLocalChanged`
  */
-export interface StorageLocalProtocol {
-  /** @internal */
-  __test__string_literal: 'A' | 'B'
-  /** @internal */
-  __test__string_array: string[]
-}
+export interface StorageLocalProtocol {}
