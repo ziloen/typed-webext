@@ -384,7 +384,7 @@ export function webextHandleMessage(
   if (
     !message ||
     typeof message !== 'object' ||
-    Reflect.get(message, MsgIdentifier) !== 1
+    Reflect.get(message, '_id') !== MsgIdentifier
   ) {
     return
   }
