@@ -8,8 +8,8 @@ export default defineConfig({
   },
   inputOptions: {
     experimental: {
-      attachDebugInfo: "none",
-    }
+      attachDebugInfo: 'none',
+    },
   },
   outputOptions: {
     comments: false,

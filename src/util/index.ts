@@ -1,5 +1,3 @@
-import * as browser from 'webextension-polyfill'
-
 export { getIsBackground } from './isBackgroundPage'
 export { isContentScriptPage } from './isContentScriptPage'
 export { isSidepanelPage, isSidepanelPageSync } from './isSidepanelPage'
@@ -17,7 +15,7 @@ export function isTabsApiAvailable(): boolean {
 export function asType<T>(value: any): asserts value is T {}
 
 /* #__NO_SIDE_EFFECTS__ */
-export function isSenderSidepanel(sender: browser.Runtime.MessageSender): void {
+export function isSenderSidepanel(sender: chrome.runtime.MessageSender): void {
   return
 }
 

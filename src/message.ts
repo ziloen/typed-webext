@@ -1,8 +1,6 @@
 import type { ErrorObject } from 'serialize-error'
 import { deserializeError, serializeError } from 'serialize-error'
 import type { If, IsNever, Promisable, ReadonlyDeep } from 'type-fest'
-import type { Runtime } from 'webextension-polyfill'
-import * as browser from 'webextension-polyfill'
 import type { MessageProtocol } from './index'
 import {
   asType,
@@ -14,20 +12,23 @@ import {
   noop,
 } from './util'
 
-const BgForwardMsgId = '__webext_forward_tabs_message__'
+type MessageSender = chrome.runtime.MessageSender
 
-const MsgIdentifier = '__webext_message_identifier__'
+const extId =
+  typeof browser.runtime.id === 'string' ? browser.runtime.id : 'unknown'
+const BgForwardMsgId = '__forward_' + extId
+const MsgIdentifier = '__' + extId
 
 type Message<Data, Return, Manual extends boolean> = {
   id: string
   /**
    * The sender of the message
    */
-  sender: Runtime.MessageSender
+  sender: MessageSender
   /**
    * The original sender of the message if it is forwarded by background
    */
-  originalSender?: Runtime.MessageSender | undefined
+  originalSender?: MessageSender | undefined
 
   /**
    * Function to send a response. Only available if Manual is true.
@@ -104,7 +105,7 @@ async function sendMessageImpl<
 
   if (destination === 'content-script' && isContentScript) {
     res = await browser.runtime.sendMessage({
-      [MsgIdentifier]: 1,
+      _id: MsgIdentifier,
       id: BgForwardMsgId,
       data: {
         tabId,
@@ -118,7 +119,7 @@ async function sendMessageImpl<
   // No tabId, send directly to background
   else if (tabId === undefined) {
     res = await browser.runtime.sendMessage({
-      [MsgIdentifier]: 1,
+      _id: MsgIdentifier,
       id,
       data,
       destination,
@@ -129,7 +130,7 @@ async function sendMessageImpl<
     res = await browser.tabs.sendMessage(
       tabId === 'active' ? await getActiveTabId() : tabId,
       {
-        [MsgIdentifier]: 1,
+        _id: MsgIdentifier,
         id,
         data,
         destination,
@@ -140,7 +141,7 @@ async function sendMessageImpl<
   // Send to tab and tabs API is not available, forward by background
   else {
     res = await browser.runtime.sendMessage({
-      [MsgIdentifier]: 1,
+      _id: MsgIdentifier,
       id: BgForwardMsgId,
       data: {
         tabId,
@@ -304,11 +305,11 @@ function handleForwardMessage(
   message: {
     id?: string
     data?: unknown
-    [MsgIdentifier]?: 1
+    _id?: typeof MsgIdentifier
   },
-  sender: Runtime.MessageSender,
+  sender: MessageSender,
 ) {
-  if (message[MsgIdentifier] !== 1) return
+  if (message._id !== MsgIdentifier) return
   if (message.id !== BgForwardMsgId) return
 
   return new Promise(async (resolve, reject) => {
@@ -338,7 +339,7 @@ function handleForwardMessage(
     if (destination === 'content-script' && targetTabId === undefined) {
       resolve(
         browser.runtime.sendMessage({
-          [MsgIdentifier]: 1,
+          _id: MsgIdentifier,
           id,
           data,
           sender,
@@ -357,7 +358,7 @@ function handleForwardMessage(
           data,
           sender,
           destination,
-          [MsgIdentifier]: 1,
+          _id: MsgIdentifier,
         },
         targetFrameId === undefined ? undefined : { frameId: targetFrameId },
       ),
@@ -365,9 +366,11 @@ function handleForwardMessage(
   })
 }
 
+type ListenerCallback<T> = T extends chrome.events.Event<infer U> ? U : never
+
 // FIXME: side effects
 browser.runtime.onMessage.addListener(
-  webextHandleMessage as Runtime.OnMessageListenerCallback,
+  webextHandleMessage as ListenerCallback<typeof chrome.runtime.onMessage>,
 )
 
 /**
@@ -375,7 +378,7 @@ browser.runtime.onMessage.addListener(
  */
 export function webextHandleMessage(
   message: unknown,
-  sender: Runtime.MessageSender,
+  sender: MessageSender,
   sendResponse: (response: unknown) => void,
 ): true | Promise<unknown> | void {
   if (
@@ -392,9 +395,9 @@ export function webextHandleMessage(
     /**
      * Forwarded message sender
      */
-    sender?: Runtime.MessageSender
+    sender?: MessageSender
     destination?: 'sidebar' | 'content-script'
-    [MsgIdentifier]?: 1
+    _id?: typeof MsgIdentifier
   }>(message)
 
   if (isBackground) {
@@ -471,7 +474,7 @@ export function webextHandleMessage(
     .then((data) => ({ data }))
     .catch((error: unknown) => ({
       error: serializeError(
-        error instanceof Error
+        Error.isError(error)
           ? error
           : new Error('Unknown error', { cause: error }),
       ),

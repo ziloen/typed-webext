@@ -51,6 +51,7 @@
       "DOM"
     ],
     "types": [
+      "chrome",
       "ts-lib-enhance"
     ],
     "paths": {

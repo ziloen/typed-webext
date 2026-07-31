@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import type { Observable, Subscription } from 'rxjs'
 import { fromEventPattern, share, Subject } from 'rxjs'
-import Browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 import type { ObjectDefaults, StorageLocalChange } from './storage'
 
@@ -139,7 +138,7 @@ class StorageCache {
       this.#fetchingKeys.add(key)
     }
 
-    Browser.storage.local.get([...missingKeys]).then((data) => {
+    browser.storage.local.get([...missingKeys]).then((data) => {
       for (const key of missingKeys) {
         this.#fetchingKeys.delete(key)
         this.#cache.set(key, {
@@ -153,7 +152,7 @@ class StorageCache {
   }
 
   constructor() {
-    Browser.storage.local.onChanged.addListener((changes) => {
+    browser.storage.local.onChanged.addListener((changes) => {
       const keys = new Set(Object.keys(changes))
 
       for (const key of keys) {
@@ -208,8 +207,8 @@ function buildState(
  */
 export const storageLocalChanged$: Observable<StorageLocalChange> =
   /*#__PURE__*/ fromEventPattern(
-    (handler) => Browser.storage.onChanged.addListener(handler),
+    (handler) => browser.storage.onChanged.addListener(handler),
     (handler) =>
-      Browser.runtime.id && Browser.storage.onChanged.removeListener(handler),
+      browser.runtime.id && browser.storage.onChanged.removeListener(handler),
     (changes: StorageLocalChange) => changes,
   ).pipe(/*#__PURE__*/ share({ resetOnRefCountZero: true }))

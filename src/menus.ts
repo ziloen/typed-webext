@@ -1,25 +1,25 @@
-import Browser from 'webextension-polyfill'
-import type { Menus, Tabs } from 'webextension-polyfill'
+type OnClickData = chrome.contextMenus.OnClickData
+type Tab = chrome.tabs.Tab
 
 export type ContextMenuItem = Omit<
-  Menus.CreateCreatePropertiesType,
+  chrome.contextMenus.CreateProperties,
   'id' | 'parentId' | 'onclick'
 > & {
   id: string
   children?: ContextMenuItem[]
-  handler?: (info: Menus.OnClickData, tab: Tabs.Tab | undefined) => void
+  handler?: (info: OnClickData, tab: Tab | undefined) => void
 }
 
 export function createContextMenu(items: ContextMenuItem[]): () => void {
   const listenersMap = new Map<
-    string,
-    (info: Menus.OnClickData, tab: Tabs.Tab | undefined) => void
+    string | number,
+    (info: OnClickData, tab: Tab | undefined) => void
   >()
 
   for (const item of items) {
     const { id, children, handler, ...props } = item
 
-    Browser.contextMenus.create({
+    browser.contextMenus.create({
       id,
       ...props,
     })
@@ -29,18 +29,18 @@ export function createContextMenu(items: ContextMenuItem[]): () => void {
     }
   }
 
-  Browser.contextMenus.create({})
+  browser.contextMenus.create({})
 
-  function listener(info: Menus.OnClickData, tab: Tabs.Tab | undefined) {
-    const handler = listenersMap.get(info.menuItemId as string)
+  function listener(info: OnClickData, tab: Tab | undefined) {
+    const handler = listenersMap.get(info.menuItemId)
     if (handler) {
       handler(info, tab)
     }
   }
 
-  Browser.contextMenus.onClicked.addListener(listener)
+  browser.contextMenus.onClicked.addListener(listener)
 
   return () => {
-    Browser.contextMenus.onClicked.removeListener(listener)
+    browser.contextMenus.onClicked.removeListener(listener)
   }
 }

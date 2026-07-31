@@ -1,6 +1,4 @@
 import { deserializeError, serializeError } from 'serialize-error'
-import type { Runtime } from 'webextension-polyfill'
-import * as browser from 'webextension-polyfill'
 import type { StreamProtocol } from './index'
 
 type StreamKey = keyof StreamProtocol
@@ -12,6 +10,8 @@ type DisposableCleanup = {
   [Symbol.dispose](): void
 }
 
+type Port = chrome.runtime.Port
+
 /**
  * Stream interface for sending and receiving messages
  */
@@ -19,7 +19,7 @@ export interface Stream<SendData = unknown, MsgData = unknown> {
   /**
    * The port connecting the two ends of the stream
    */
-  port: Runtime.Port
+  port: Port
   /**
    * signal for aborting the stream
    *
@@ -97,9 +97,7 @@ const listeners = new Map<string, StreamCallback<any, any>>()
 /**
  * @private
  */
-function createStream<T = unknown, K = unknown>(
-  port: Runtime.Port,
-): Stream<T, K> {
+function createStream<T = unknown, K = unknown>(port: Port): Stream<T, K> {
   let isConnected = true
   const ac = new AbortController()
 
@@ -110,15 +108,17 @@ function createStream<T = unknown, K = unknown>(
   })
 
   function close() {
-    if (isConnected) {
-      isConnected = false
-      stream.isConnected = false
-      ac.abort()
-      port.disconnect()
+    if (!isConnected) {
+      return
     }
+
+    isConnected = false
+    stream.isConnected = false
+    ac.abort()
+    port.disconnect()
   }
 
-  function onClose(callback: (port: Runtime.Port) => void) {
+  function onClose(callback: (port: Port) => void) {
     port.onDisconnect.addListener(callback)
 
     return withDisposal(() => {
@@ -126,8 +126,8 @@ function createStream<T = unknown, K = unknown>(
     })
   }
 
-  function onMessage(callback: (message: K, port: Runtime.Port) => void) {
-    function wrappedCallback(message: unknown, p: Runtime.Port) {
+  function onMessage(callback: (message: K, port: Port) => void) {
+    function wrappedCallback(message: unknown, p: Port) {
       if (message && Object.hasOwn(message, 'data')) {
         callback(message.data as K, p)
       }
@@ -140,8 +140,8 @@ function createStream<T = unknown, K = unknown>(
     })
   }
 
-  function onError(callback: (error: Error, port: Runtime.Port) => void) {
-    function wrappedCallback(message: unknown, p: Runtime.Port) {
+  function onError(callback: (error: Error, port: Port) => void) {
+    function wrappedCallback(message: unknown, p: Port) {
       if (message && Object.hasOwn(message, 'error')) {
         callback(deserializeError(message.error), p)
       }
@@ -167,10 +167,12 @@ function createStream<T = unknown, K = unknown>(
       }
     },
     error(error: Error) {
-      if (isConnected) {
-        port.postMessage({ error: serializeError(error) })
-        close()
+      if (!isConnected) {
+        return
       }
+
+      port.postMessage({ error: serializeError(error) })
+      close()
     },
     close,
     onMessage,
@@ -295,7 +297,7 @@ export const openStream = /*#__PURE__*/ new Proxy(
 /**
  * Handle stream from runtime.onConnect
  */
-export function webextHandleStream(port: Runtime.Port): void {
+export function webextHandleStream(port: Port): void {
   const channel = port.name
   const listener = listeners.get(channel)
 

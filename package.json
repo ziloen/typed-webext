@@ -32,33 +32,35 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/webextension-polyfill": "^0.12.5",
     "rxjs": "^7.8.2",
     "serialize-error": "<=13",
-    "type-fest": "^5.6.0",
-    "webextension-polyfill": ">=0.12.0 <=1.0.0"
+    "type-fest": "^5.8.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@types/react": "^19.2.14",
-    "@ziloen/eslint-config": "^0.1.82",
-    "bumpp": "^11.1.0",
-    "eslint": "^10.3.0",
-    "oxfmt": "^0.49.0",
-    "ts-lib-enhance": "^1.0.22",
-    "tsdown": "^0.22.0",
+    "@types/chrome": "^0.2.2",
+    "@types/react": "^19.2.18",
+    "@ziloen/eslint-config": "^0.1.83",
+    "bumpp": "^12.1.1",
+    "eslint": "^10.8.0",
+    "oxfmt": "^0.61.0",
+    "ts-lib-enhance": "^1.0.24",
+    "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
+    "@types/chrome": "^0.2.2",
     "react": ">=19.0.0",
-    "serialize-error": "<=13",
-    "webextension-polyfill": ">=0.12.0 <=1.0.0"
+    "serialize-error": "<=13"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "@types/chrome": {
       "optional": true
     }
   },

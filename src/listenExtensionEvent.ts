@@ -1,16 +1,14 @@
-import type { Events } from 'webextension-polyfill'
 import { noop } from './util'
 
 /**
  * @example
  * ```ts
  * import { listenExtensionEvent } from 'typed-webext'
- * import Browser from 'webextension-polyfill'
  *
  * const ac = new AbortController()
  *
  * listenExtensionEvent(
- *   Browser.runtime.onMessage,
+ *   browser.runtime.onMessage,
  *   (message, sender) => {
  *     console.log('Received message:', message, 'from', sender)
  *   },
@@ -22,7 +20,7 @@ import { noop } from './util'
  * ```
  */
 export function listenExtensionEvent<Callback extends (...args: any[]) => any>(
-  target: Events.Event<Callback>,
+  target: chrome.events.Event<Callback>,
   callback: NoInfer<Callback>,
   options?: { signal?: AbortSignal },
 ): () => void {

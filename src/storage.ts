@@ -1,4 +1,3 @@
-import * as browser from 'webextension-polyfill'
 import type { StorageLocalProtocol } from './index'
 
 type Key = keyof StorageLocalProtocol
@@ -120,9 +119,8 @@ export async function getStorageLocal(
 
     // If key does not exist in storage.local
     return defaultValue
-  } else {
-    return result
   }
+  return result
 }
 
 export async function removeStorageLocal(key: Key): Promise<void>

@@ -8,13 +8,7 @@ declare class ServiceWorkerGlobalScope {}
  */
 /* #__NO_SIDE_EFFECTS__ */
 export function getIsBackground(): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/consistent-type-imports
-  const browser: import('webextension-polyfill').Browser | undefined =
-    // @ts-expect-error just ignore
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    globalThis.browser?.runtime?.id ? globalThis.browser : globalThis.chrome
-
-  if (!browser?.runtime.id) {
+  if (!globalThis.browser?.runtime.id) {
     return false
   }
 
