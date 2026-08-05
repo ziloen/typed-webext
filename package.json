@@ -40,12 +40,12 @@
     "dist"
   ],
   "devDependencies": {
-    "@types/chrome": "^0.2.2",
+    "@types/chrome": "^0.2.5",
     "@types/react": "^19.2.18",
     "@ziloen/eslint-config": "^0.1.83",
     "bumpp": "^12.1.1",
     "eslint": "^10.8.0",
-    "oxfmt": "^0.61.0",
+    "oxfmt": "^0.62.0",
     "ts-lib-enhance": "^1.0.24",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3",

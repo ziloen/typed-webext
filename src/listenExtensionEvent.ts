@@ -1,6 +1,14 @@
 import { noop } from './util'
 
 /**
+ * compatible with `@types/chrome` and `@types/webextension-polyfill`
+ */
+interface ExtensionEvent<T extends (...args: any) => void> {
+  addListener(callback: T): void
+  removeListener(callback: T): void
+}
+
+/**
  * @example
  * ```ts
  * import { listenExtensionEvent } from 'typed-webext'
@@ -20,7 +28,7 @@ import { noop } from './util'
  * ```
  */
 export function listenExtensionEvent<Callback extends (...args: any[]) => any>(
-  target: chrome.events.Event<Callback>,
+  target: ExtensionEvent<Callback>,
   callback: NoInfer<Callback>,
   options?: { signal?: AbortSignal },
 ): () => void {
