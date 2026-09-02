@@ -47,6 +47,17 @@ type MsgReturn<
   Data = unknown,
 > = MessageProtocol<Data>[Key][1]
 
+type WebextMessage = {
+  id: MsgKey
+  data: MsgData<MsgKey>
+  /**
+   * Forwarded message sender
+   */
+  sender?: MessageSender
+  destination?: 'sidebar' | 'content-script'
+  _id?: typeof MsgIdentifier
+}
+
 type MsgCallback<
   Manual extends boolean = false,
   Data = MsgData<MsgKey>,
@@ -366,6 +377,45 @@ function handleForwardMessage(
   })
 }
 
+function isTargetTab(
+  options: OnMsgOptions<boolean>,
+  message: WebextMessage,
+  sender: MessageSender,
+): boolean {
+  const targetTabId = options.tabId
+  if (targetTabId === undefined) return true
+
+  const sourceSender = isContentScript ? message.sender : sender
+  return sourceSender?.tab?.id === targetTabId
+}
+
+function runManualListeners(
+  message: WebextMessage,
+  sender: MessageSender,
+  sendResponse: (response: unknown) => void,
+): void {
+  const manualListeners = manualListenersMap.get(message.id)
+  if (!manualListeners) return
+
+  for (const { callback, options } of manualListeners.values()) {
+    if (!isTargetTab(options, message, sender)) continue
+
+    try {
+      callback({
+        id: message.id,
+        data: message.data,
+        sender,
+        originalSender: message.sender,
+        sendResponse,
+      })
+    } catch (e) {
+      // ignore manual listener error
+      // catch error to prevent runtime.onMessage from throwing
+      console.error(e)
+    }
+  }
+}
+
 type ListenerCallback<T> = T extends chrome.events.Event<infer U> ? U : never
 
 // FIXME: side effects
@@ -389,16 +439,7 @@ export function webextHandleMessage(
     return
   }
 
-  asType<{
-    id: MsgKey
-    data: MsgData<MsgKey>
-    /**
-     * Forwarded message sender
-     */
-    sender?: MessageSender
-    destination?: 'sidebar' | 'content-script'
-    _id?: typeof MsgIdentifier
-  }>(message)
+  asType<WebextMessage>(message)
 
   if (isBackground) {
     const res = handleForwardMessage(message, sender)
@@ -418,34 +459,7 @@ export function webextHandleMessage(
   const id = message.id
 
   // Run all manual listeners
-  const manualListeners = manualListenersMap.get(id)
-  if (manualListeners) {
-    for (const { callback, options } of manualListeners.values()) {
-      if (options.tabId !== undefined) {
-        const isTargetTab = isContentScript
-          ? message.sender?.tab?.id === options.tabId
-          : sender?.tab?.id === options.tabId
-
-        if (!isTargetTab) {
-          continue
-        }
-      }
-
-      try {
-        callback({
-          id,
-          data: message.data,
-          sender,
-          originalSender: message.sender,
-          sendResponse,
-        })
-      } catch (e) {
-        // ignore manual listener error
-        // catch error to prevent runtime.onMessage from throwing
-        console.error(e)
-      }
-    }
-  }
+  runManualListeners(message, sender, sendResponse)
 
   const listener = listenersMap.get(id)
   if (!listener) {
@@ -453,15 +467,7 @@ export function webextHandleMessage(
   }
   const { callback, options } = listener
 
-  if (options?.tabId !== undefined) {
-    const isTargetTab = isContentScript
-      ? message.sender?.tab?.id === options.tabId
-      : sender?.tab?.id === options.tabId
-
-    if (!isTargetTab) {
-      return
-    }
-  }
+  if (!isTargetTab(options, message, sender)) return
 
   // Run the listener
   Promise.try(callback, {

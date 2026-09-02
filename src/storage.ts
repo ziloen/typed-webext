@@ -164,9 +164,9 @@ export async function setStorageLocal(
 ) {
   if (typeof items === 'string') {
     return browser.storage.local.set({ [items]: value })
-  } else {
-    return browser.storage.local.set(items)
   }
+
+  return browser.storage.local.set(items)
 }
 
 export type StorageLocalChange =

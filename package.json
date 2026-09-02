@@ -12,6 +12,7 @@
     "release": "bumpp --commit --no-push && npm publish",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "fmt": "oxfmt"
   },
   "keywords": [
@@ -34,22 +35,22 @@
   "dependencies": {
     "rxjs": "^7.8.2",
     "serialize-error": "<=13",
-    "type-fest": "^5.8.0"
+    "type-fest": "^5.9.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@types/chrome": "^0.2.5",
+    "@types/chrome": "^0.2.8",
     "@types/react": "^19.2.18",
-    "@ziloen/eslint-config": "^0.1.83",
-    "bumpp": "^12.1.1",
-    "eslint": "^10.8.0",
-    "oxfmt": "^0.62.0",
+    "@ziloen/eslint-config": "^0.1.86",
+    "bumpp": "^12.2.2",
+    "eslint": "^10.9.1",
+    "oxfmt": "^0.66.0",
     "ts-lib-enhance": "^1.0.24",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "peerDependencies": {
     "@types/chrome": "^0.2.2",

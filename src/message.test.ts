@@ -1,5 +1,8 @@
 import { test } from 'vitest'
-import { onMessage, type sendMessage as sendMessageType } from './message'
+import type {
+  onMessage as onMessageType,
+  sendMessage as sendMessageType,
+} from './message'
 import type { Equal, Expect } from './util'
 
 declare module './' {
@@ -13,6 +16,7 @@ declare module './' {
   }
 }
 
+declare const onMessage: typeof onMessageType
 declare const sendMessage: typeof sendMessageType
 
 test('message type check', () => {})

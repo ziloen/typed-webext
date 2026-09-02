@@ -64,9 +64,9 @@ export function useStorageLocal(keys: string[] | Record<string, any>) {
 
     if (data) {
       return [(state = buildState(state, data, keysLatest.current)), false]
-    } else {
-      return [isArray ? {} : keys, true]
     }
+
+    return [isArray ? {} : keys, true]
   }
 
   const [result, setResult] = useState(initState)
