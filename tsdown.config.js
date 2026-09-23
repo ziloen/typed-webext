@@ -4,7 +4,7 @@ export default defineConfig({
   entry: ['src/index.ts', 'src/react.ts'],
   outDir: 'dist',
   dts: {
-    oxc: true,
+    generator: 'oxc',
   },
   inputOptions: {
     experimental: {
