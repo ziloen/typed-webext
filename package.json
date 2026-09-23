@@ -34,28 +34,28 @@
   "license": "MIT",
   "dependencies": {
     "rxjs": "^7.8.2",
-    "serialize-error": "<=13",
+    "serialize-error": "^13.0.1",
     "type-fest": "^5.9.0"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "@types/chrome": "^0.2.8",
-    "@types/react": "^19.2.18",
-    "@ziloen/eslint-config": "^0.1.86",
-    "bumpp": "^12.2.2",
-    "eslint": "^10.9.1",
-    "oxfmt": "^0.66.0",
+    "@types/chrome": "^0.3.0",
+    "@types/react": "^19.3.0",
+    "@ziloen/eslint-config": "^0.1.87",
+    "bumpp": "^12.3.0",
+    "eslint": "^10.10.0",
+    "oxfmt": "^0.68.0",
     "ts-lib-enhance": "^1.0.24",
-    "tsdown": "^0.22.14",
+    "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   },
   "peerDependencies": {
-    "@types/chrome": "^0.2.2",
+    "@types/chrome": "^0.3.0",
     "react": ">=19.0.0",
-    "serialize-error": "<=13"
+    "serialize-error": "^13.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
